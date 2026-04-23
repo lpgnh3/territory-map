@@ -152,6 +152,32 @@ Promise.all([
 
   const miLowerOnly = miLower.filter(c => !miUP.includes(c));
 
+  const sd = counties.features.filter(c =>
+  c.properties.STATE === "46"
+);
+
+const sdNorthNames = new Set([
+  "Harding","Perkins","Butte","Ziebach","Corson","Dewey",
+  "Potter","Faulk","Edmunds","Walworth","Campbell",
+  "McPherson","Brown","Spink","Clark","Codington",
+  "Grant","Roberts","Marshall","Day","Hamlin","Deuel"
+]);
+
+const sdSouthNames = new Set([
+  "Sully","Stanley","Haakon","Jones","Lyman","Hughes",
+  "Hyde","Hand","Beadle","Kingsbury","Brookings","Moody",
+  "Lake","Miner","Sanborn","Jerauld","Buffalo","Brule",
+  "Aurora","Davison","Hanson","McCook","Minnehaha",
+  "Turner","Lincoln","Union","Clay","Yankton","Hutchinson",
+  "Douglas","Charles Mix","Gregory","Tripp","Todd",
+  "Mellette","Jackson","Bennett", "Bon Homme"
+]);
+
+const sdNorth = sd.filter(c => sdNorthNames.has(c.properties.NAME));
+const sdSouth = sd.filter(c => sdSouthNames.has(c.properties.NAME));
+
+
+
   // ---------------- TERRITORIES ----------------
 
   makeLayer([getState("Nebraska"), getState("Iowa"), ...mnSouth], "#4dabf7", "NE_IA_SOUTH_MN");
@@ -162,7 +188,31 @@ Promise.all([
 
   makeLayer([getState("Wisconsin"), ...miUP], "#845ef7", "WI_UP_MI");
 
-  makeLayer([getState("South Dakota"), getState("Montana"), getState("Idaho"), getState("Wyoming")], "#ff6b6b", "SD_MT_ID_WY");
+  // ND + Northern MN + Northern SD
+makeLayer(
+  [getState("North Dakota"), ...mnNorth, ...sdNorth],
+  "#51cf66",
+  "ND_NORTH_MN"
+);
+
+// IA + Southern MN + NE + Southern SD
+makeLayer(
+  [getState("Nebraska"), getState("Iowa"), ...mnSouth, ...sdSouth],
+  "#4dabf7",
+  "NE_IA_SOUTH_MN"
+);
+
+// Remaining SD (if any) stays with west territory
+const sdRemaining = sd.filter(c =>
+  !sdNorthNames.has(c.properties.NAME) &&
+  !sdSouthNames.has(c.properties.NAME)
+);
+
+makeLayer(
+  [...sdRemaining, getState("Montana"), getState("Idaho"), getState("Wyoming"), getState("Washington"), getState("Oregon")],
+  "#ff6b6b",
+  "SD_MT_ID_WY"
+);
 
 }).catch(err => {
   console.error("LOAD ERROR:", err);
