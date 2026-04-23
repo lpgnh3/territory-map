@@ -75,19 +75,20 @@ function makePopup(rep) {
 // ---------------- TERRITORY ----------------
 function makeLayer(features, color, key) {
 
+  const baseStyle = style(color);
+
   const layer = L.geoJSON(features, {
 
-    style: style(color),
+    style: baseStyle,
 
     onEachFeature: function (feature, l) {
 
-      // hover effect (slight darkening)
       l.on("mouseover", function () {
         l.setStyle({ fillOpacity: 0.85 });
       });
 
       l.on("mouseout", function () {
-        l.setStyle({ fillOpacity: 0.7 });
+        l.setStyle({ fillOpacity: baseStyle.fillOpacity });
       });
 
       l.on("click", function () {
@@ -177,12 +178,9 @@ const sdNorth = sd.filter(c => sdNorthNames.has(c.properties.NAME));
 const sdSouth = sd.filter(c => sdSouthNames.has(c.properties.NAME));
 
 
-
   // ---------------- TERRITORIES ----------------
 
-  makeLayer([getState("Nebraska"), getState("Iowa"), ...mnSouth], "#4dabf7", "NE_IA_SOUTH_MN");
-
-  makeLayer([getState("North Dakota"), ...mnNorth], "#51cf66", "ND_NORTH_MN");
+  makeLayer([getState("Nebraska"), getState("Iowa"), ...mnSouth, ...sdSouth], "#4dabf7", "NE_IA_SOUTH_MN");
 
   makeLayer([getState("Illinois"), getState("Indiana"), getState("Ohio"), ...miLowerOnly], "#f59f00", "IL_IN_OH_MI");
 
@@ -203,9 +201,10 @@ makeLayer(
 );
 
 // Remaining SD (if any) stays with west territory
+const assignedSD = new Set([...sdNorthNames, ...sdSouthNames]);
+
 const sdRemaining = sd.filter(c =>
-  !sdNorthNames.has(c.properties.NAME) &&
-  !sdSouthNames.has(c.properties.NAME)
+  !assignedSD.has(c.properties.NAME)
 );
 
 makeLayer(
