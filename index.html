@@ -17,6 +17,65 @@
     .leaflet-overlay-pane svg path {
       shape-rendering: crispEdges;
     }
+
+    /* --- POPUP BASE --- */
+.popup-card {
+  display: flex;
+  gap: 12px;
+  width: 300px;
+  font-family: Arial;
+  align-items: center;
+}
+
+.popup-img {
+  width: 120px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.popup-name {
+  font-weight: bold;
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+.popup-contact {
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+/* --- MOBILE FIX --- */
+@media (max-width: 600px) {
+
+  .leaflet-popup-content {
+    margin: 10px !important;
+  }
+
+  .popup-card {
+    width: 90vw;              /* nearly full screen */
+    gap: 16px;
+  }
+
+  .popup-img {
+    width: 140px;
+    height: 180px;
+  }
+
+  .popup-name {
+    font-size: 18px;
+  }
+
+  .popup-contact {
+    font-size: 15px;
+  }
+
+}
+
+.leaflet-popup-content-wrapper {
+  max-width: 95vw;
+}
+
   </style>
 </head>
 
@@ -39,7 +98,8 @@ const reps = {
   "ND_NORTH_MN": { name:"Darin Adolphson", email:"djadolphsen@lpgnh3.com", phone:"(763) 234-7674", photo:"./photos/Darin.jpg" },
   "IL_IN_OH_MI": { name:"Matt Hall", email:"mwhall@lpgnh3.com", phone:"(309) 206-0533", photo:"./photos/Matt.jpg" },
   "WI_UP_MI": { name:"Chris Mikula", email:"cmmikula@lpgnh3.com", phone:"(920) 470-0717", photo:"./photos/Chris.jpg" },
-  "SD_MT_ID_WY": { name:"Norm Steveson", email:"nrsteveson@lpgnh3.com", phone:"800-328-0314", photo:"./photos/Norm.jpg" }
+  "SD_MT_ID_WY": { name:"Norm Steveson", email:"nrsteveson@lpgnh3.com", phone:"800-328-0314", photo:"./photos/Norm.jpg" },
+  "Southern_US": { name:"LPG & NH3 Supply", email:"sales@lpgnh3.com", phone:"800-328-0314", photo:"./photos/LPG.png" }
 };
 
 // ---------------- STYLE (SEAM ELIMINATION) ----------------
@@ -57,14 +117,11 @@ function style(color) {
 // ---------------- POPUP ----------------
 function makePopup(rep) {
   return `
-    <div style="display:flex;gap:12px;width:300px;font-family:Arial;align-items:center;">
-      <img src="${rep.photo}"
-        style="width:120px;height:150px;object-fit:cover;border-radius:10px;" />
-      <div>
-        <div style="font-weight:bold;font-size:15px;margin-bottom:6px;">
-          ${rep.name}
-        </div>
-        <div style="font-size:12.5px;line-height:1.5;">
+    <div class="popup-card">
+      <img src="${rep.photo}" class="popup-img" />
+      <div class="popup-text">
+        <div class="popup-name">${rep.name}</div>
+        <div class="popup-contact">
           ${rep.email}<br>${rep.phone}
         </div>
       </div>
@@ -177,7 +234,6 @@ const sdSouthNames = new Set([
 const sdNorth = sd.filter(c => sdNorthNames.has(c.properties.NAME));
 const sdSouth = sd.filter(c => sdSouthNames.has(c.properties.NAME));
 
-
   // ---------------- TERRITORIES ----------------
 
   makeLayer([getState("Nebraska"), getState("Iowa"), ...mnSouth, ...sdSouth], "#4dabf7", "NE_IA_SOUTH_MN");
@@ -185,6 +241,46 @@ const sdSouth = sd.filter(c => sdSouthNames.has(c.properties.NAME));
   makeLayer([getState("Illinois"), getState("Indiana"), getState("Ohio"), ...miLowerOnly], "#f59f00", "IL_IN_OH_MI");
 
   makeLayer([getState("Wisconsin"), ...miUP], "#845ef7", "WI_UP_MI");
+
+  makeLayer(
+  [
+    getState("California"),
+    getState("Nevada"),
+    getState("Utah"),
+    getState("Arizona"),
+    getState("Colorado"),
+    getState("New Mexico"),
+    getState("Kansas"),
+    getState("Oklahoma"),
+    getState("Texas"),
+    getState("Louisiana"),
+    getState("Arkansas"),
+    getState("Missouri"),
+    getState("Kentucky"),
+    getState("Tennessee"),
+    getState("Mississippi"),
+    getState("Alabama"),
+    getState("Georgia"),
+    getState("Florida"),
+    getState("South Carolina"),
+    getState("North Carolina"),
+    getState("Virginia"),
+    getState("West Virginia"),
+    getState("Pennsylvania"),
+    getState("New York"),
+    getState("Maine"),
+    getState("Vermont"),
+    getState("Maryland"),
+    getState("Delaware"),
+    getState("New Jersey"),
+    getState("Connecticut"),
+    getState("Massachusetts"),
+    getState("Rhode Island"),
+    getState("New Hampshire")
+  ],
+  "#adb5bd",
+  "Southern_US"
+);
 
   // ND + Northern MN + Northern SD
 makeLayer(
