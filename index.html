@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
     #map {
@@ -177,7 +178,7 @@ function render(repKey) {
 
 // ---------------- UI CONTROL ----------------
 function openPanel(repKey) {
-  const isMobile = window.innerWidth <= 768;
+  const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
   if (isMobile) {
     document.getElementById("drawerContent").innerHTML = render(repKey);
