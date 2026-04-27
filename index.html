@@ -10,6 +10,9 @@
   <style>
     #map { height: 100vh; width: 100%; }
 
+    /* =========================
+       MAP CLEANUP
+       ========================= */
     .leaflet-overlay-pane svg {
       shape-rendering: geometricPrecision;
     }
@@ -24,20 +27,23 @@
       transform: translateZ(0);
     }
 
+    /* =========================
+       POPUP (DESKTOP)
+       ========================= */
     .popup-card {
-  display: flex;
-  gap: 12px;
-  width: min(300px, 85vw);
-  font-family: Arial;
-  align-items: center;
-}
+      display: flex;
+      gap: 12px;
+      width: min(320px, 85vw);
+      font-family: Arial;
+      align-items: center;
+    }
 
     .popup-img {
-  width: 90px;
-  height: 110px;
-  object-fit: cover;
-  border-radius: 10px;
-}
+      width: 90px;
+      height: 110px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
 
     .popup-name {
       font-weight: bold;
@@ -49,10 +55,41 @@
       font-size: 12.5px;
       line-height: 1.5;
     }
-    
-    .leaflet-popup {
-  margin-bottom: 40px;
-}
+
+    /* =========================
+       MOBILE POPUP FIX (REAL FIX)
+       ========================= */
+    @media (max-width: 600px) {
+
+      .leaflet-popup {
+        width: 94vw !important;
+        max-width: 94vw !important;
+      }
+
+      .leaflet-popup-content {
+        width: 100% !important;
+        margin: 10px !important;
+      }
+
+      .popup-card {
+        width: 100%;
+        gap: 14px;
+        align-items: flex-start;
+      }
+
+      .popup-img {
+        width: 120px;
+        height: 140px;
+      }
+
+      .popup-name {
+        font-size: 16px;
+      }
+
+      .popup-contact {
+        font-size: 13px;
+      }
+    }
   </style>
 </head>
 
@@ -104,15 +141,22 @@ function popup(rep) {
   `;
 }
 
-// ---------------- STATE BORDERS (NEW FIX) ----------------
-function addStateBorders(states) {
-  L.geoJSON(states, {
-    style: {
-      color: "#2b2b2b",
-      weight: 1.5,
-      fillOpacity: 0
-    },
-    interactive: false
+// ---------------- ADD LAYER ----------------
+function addLayer(feature, color, repKey) {
+  if (!feature) return;
+
+  L.geoJSON(feature, {
+    style: style(color),
+    onEachFeature: (f, l) => {
+      l.on("mouseover", () => l.setStyle({ fillOpacity: 0.85 }));
+      l.on("mouseout", () => l.setStyle({ fillOpacity: 0.7 }));
+      l.on("click", () => {
+        L.popup()
+          .setLatLng(l.getBounds().getCenter())
+          .setContent(popup(reps[repKey]))
+          .openOn(map);
+      });
+    }
   }).addTo(map);
 }
 
@@ -139,25 +183,6 @@ function splitVertical(feature, lng) {
     west: turf.intersect(feature, west),
     east: turf.intersect(feature, east)
   };
-}
-
-// ---------------- ADD LAYER ----------------
-function addLayer(feature, color, repKey) {
-  if (!feature) return;
-
-  L.geoJSON(feature, {
-    style: style(color),
-    onEachFeature: (f, l) => {
-      l.on("mouseover", () => l.setStyle({ fillOpacity: 0.85 }));
-      l.on("mouseout", () => l.setStyle({ fillOpacity: 0.7 }));
-      l.on("click", () => {
-        L.popup()
-          .setLatLng(l.getBounds().getCenter())
-          .setContent(popup(reps[repKey]))
-          .openOn(map);
-      });
-    }
-  }).addTo(map);
 }
 
 // ---------------- SNAP ----------------
@@ -260,9 +285,6 @@ fetch("./data/states.json")
         addLayer(snap(s), "#adb5bd", "IN_HOUSE");
       }
     });
-
-    // ✅ FINAL STEP: draw borders ON TOP of everything
-    addStateBorders(states);
 
   });
 
