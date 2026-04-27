@@ -8,8 +8,12 @@
   <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 
   <style>
-    #map { height: 100vh; width: 100%; }
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
 
+    /* ===== Seam Fix ===== */
     .leaflet-overlay-pane svg {
       shape-rendering: geometricPrecision;
     }
@@ -24,6 +28,7 @@
       transform: translateZ(0);
     }
 
+    /* ===== Popup ===== */
     .popup-card {
       display: flex;
       gap: 12px;
@@ -54,45 +59,48 @@
       margin-bottom: 40px;
     }
 
-    /* =========================
-   MOBILE POPUP ENLARGEMENT
-   ========================= */
+    /* ===== REAL MOBILE FIX ===== */
+    .mobile-popup .leaflet-popup-content-wrapper {
+      width: 90vw !important;
+      max-width: 90vw !important;
+      border-radius: 16px;
+    }
 
-@media (max-width: 768px) {
+    .mobile-popup .leaflet-popup-content {
+      width: 100% !important;
+      margin: 12px;
+    }
 
-  .leaflet-popup-content {
-    width: 90vw !important;
-    max-width: 90vw !important;
-  }
+    @media (max-width: 768px) {
+      .mobile-popup {
+        bottom: 0 !important;
+        left: 0 !important;
+        transform: none !important;
+        margin: 0 !important;
+      }
 
-  .leaflet-popup-content-wrapper {
-    width: 90vw !important;
-    max-width: 90vw !important;
-    border-radius: 14px;
-  }
+      .mobile-popup .leaflet-popup-content-wrapper {
+        border-radius: 18px 18px 0 0;
+      }
 
-  .leaflet-popup-content {
-    font-size: 14px;
-  }
+      .popup-card {
+        width: 100% !important;
+        gap: 14px;
+      }
 
-  .popup-card {
-    width: 100% !important;
-    gap: 14px;
-  }
+      .popup-img {
+        width: 110px;
+        height: 140px;
+      }
 
-  .popup-img {
-    width: 110px;
-    height: 140px;
-  }
+      .popup-name {
+        font-size: 17px;
+      }
 
-  .popup-name {
-    font-size: 17px;
-  }
-
-  .popup-contact {
-    font-size: 13.5px;
-  }
-}
+      .popup-contact {
+        font-size: 13.5px;
+      }
+    }
   </style>
 </head>
 
@@ -100,15 +108,17 @@
 <div id="map"></div>
 
 <script>
-
 const map = L.map('map', {
   preferCanvas: true
 }).setView([39, -94], 5);
 
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-  updateWhenZooming: false,
-  keepBuffer: 2
-}).addTo(map);
+L.tileLayer(
+  'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+  {
+    updateWhenZooming: false,
+    keepBuffer: 2
+  }
+).addTo(map);
 
 // ---------------- REPS ----------------
 const reps = {
@@ -144,7 +154,7 @@ function popup(rep) {
   `;
 }
 
-// ---------------- STATE BORDERS (NEW FIX) ----------------
+// ---------------- STATE BORDERS ----------------
 function addStateBorders(states) {
   L.geoJSON(states, {
     style: {
@@ -181,7 +191,7 @@ function splitVertical(feature, lng) {
   };
 }
 
-// ---------------- ADD LAYER ----------------
+// ---------------- ADD LAYER (FIXED POPUP) ----------------
 function addLayer(feature, color, repKey) {
   if (!feature) return;
 
@@ -191,10 +201,15 @@ function addLayer(feature, color, repKey) {
       l.on("mouseover", () => l.setStyle({ fillOpacity: 0.85 }));
       l.on("mouseout", () => l.setStyle({ fillOpacity: 0.7 }));
       l.on("click", () => {
-        L.popup()
-          .setLatLng(l.getBounds().getCenter())
-          .setContent(popup(reps[repKey]))
-          .openOn(map);
+        L.popup({
+          maxWidth: "90%",
+          minWidth: 260,
+          className: "mobile-popup",
+          autoPanPadding: [20, 80]
+        })
+        .setLatLng(l.getBounds().getCenter())
+        .setContent(popup(reps[repKey]))
+        .openOn(map);
       });
     }
   }).addTo(map);
@@ -216,14 +231,11 @@ const MI_UP_COUNTIES = new Set([
 ]);
 
 function buildMichigan(counties) {
-
   let up = [];
   let lp = [];
 
   counties.forEach(c => {
-
     const props = c.properties || {};
-
     const geoid = String(props.GEO_ID || "");
     if (!geoid.startsWith("0500000US26")) return;
 
@@ -301,11 +313,8 @@ fetch("./data/states.json")
       }
     });
 
-    // ✅ FINAL STEP: draw borders ON TOP of everything
     addStateBorders(states);
-
   });
-
 </script>
 
 </body>
