@@ -37,50 +37,56 @@
   align-items: center;
 }
 
-    .popup-img {
-      width: 90px;
-      height: 110px;
-      object-fit: cover;
-      border-radius: 10px;
-    }
+.popup-card {
+  display: flex;
+  gap: 14px;
+  width: 280px;              /* 👈 KEY: gives desktop stability */
+  min-width: 280px;
+  font-family: Arial;
+  align-items: center;
+}
 
-    .popup-name {
-      font-weight: bold;
-      font-size: 15px;
-      margin-bottom: 6px;
-    }
+.popup-img {
+  width: 95px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
 
-    .popup-contact {
-      font-size: 12.5px;
-      line-height: 1.5;
-    }
+.popup-name {
+  font-weight: bold;
+  font-size: 15px;
+  margin-bottom: 6px;
+}
 
-    .leaflet-popup {
-      margin-bottom: 40px;
-    }
+.popup-contact {
+  font-size: 12.5px;
+  line-height: 1.5;
+  word-break: break-word;
+}
 
-    /* ===== REAL MOBILE FIX ===== */
-    .mobile-popup .leaflet-popup-content-wrapper {
-      width: 90vw !important;
-      max-width: 90vw !important;
-      border-radius: 16px;
-    }
+/* 🔥 REAL mobile override */
+@media (max-width: 768px) {
 
-    .mobile-popup .leaflet-popup-content {
-      width: 100% !important;
-      margin: 12px;
-    }
+  .leaflet-popup-content-wrapper {
+    width: 92vw !important;
+    max-width: 92vw !important;
+  }
 
-    @media (max-width: 768px) {
+  .leaflet-popup-content {
+    width: 92vw !important;
+  }
 
   .popup-card {
-    width: 100%;
-    gap: 16px;
+    width: 100% !important;
+    min-width: 0 !important;
+    gap: 14px;
   }
 
   .popup-img {
-    width: 120px;
-    height: 150px;
+    width: 110px;
+    height: 140px;
   }
 
   .popup-name {
@@ -90,7 +96,6 @@
   .popup-contact {
     font-size: 14px;
   }
-
 }
   </style>
 </head>
