@@ -175,14 +175,21 @@ function render(repKey) {
 function openUI(repKey) {
   const isMobile = window.innerWidth <= 768;
 
-  if (isMobile) {
-    document.getElementById("drawerContent").innerHTML = render(repKey);
-    document.getElementById("bottomDrawer").classList.add("open");
-  } else {
-    document.getElementById("infoPanel").innerHTML = render(repKey);
-    document.getElementById("infoPanel").classList.add("open");
+  const drawer = document.getElementById("bottomDrawer");
+const handle = document.getElementById("drawerHandle");
+
+// tap handle closes drawer
+handle.addEventListener("click", (e) => {
+  e.stopPropagation();
+  drawer.classList.remove("open");
+});
+
+// tap outside content area closes (optional safety)
+drawer.addEventListener("click", (e) => {
+  if (e.target === drawer) {
+    drawer.classList.remove("open");
   }
-}
+});
 
 // ---------------- STYLE ----------------
 function style(color) {
