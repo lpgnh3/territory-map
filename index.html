@@ -25,19 +25,19 @@
     }
 
     .popup-card {
-      display: flex;
-      gap: 12px;
-      width: 300px;
-      font-family: Arial;
-      align-items: center;
-    }
+  display: flex;
+  gap: 12px;
+  width: min(300px, 85vw);
+  font-family: Arial;
+  align-items: center;
+}
 
     .popup-img {
-      width: 120px;
-      height: 150px;
-      object-fit: cover;
-      border-radius: 10px;
-    }
+  width: 90px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 10px;
+}
 
     .popup-name {
       font-weight: bold;
@@ -49,6 +49,10 @@
       font-size: 12.5px;
       line-height: 1.5;
     }
+    
+    .leaflet-popup {
+  margin-bottom: 40px;
+}
   </style>
 </head>
 
