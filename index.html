@@ -8,74 +8,55 @@
   <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 
   <style>
-    #map {
-      height: 100vh;
-      width: 100%;
+    #map { height: 100vh; width: 100%; }
+
+    /* =========================
+       🔥 SEAMLESS RENDERING FIX
+       ========================= */
+
+    .leaflet-overlay-pane svg {
+      shape-rendering: geometricPrecision;
     }
 
-    /* KEY FIX: removes subpixel seams */
-    .leaflet-overlay-pane svg path {
-      shape-rendering: crispEdges;
+    .leaflet-overlay-pane path {
+      stroke: none !important;
+      stroke-linejoin: round;
+      stroke-linecap: round;
     }
 
-    /* --- POPUP BASE --- */
-.popup-card {
-  display: flex;
-  gap: 12px;
-  width: 300px;
-  font-family: Arial;
-  align-items: center;
-}
+    .leaflet-pane svg {
+      transform: translateZ(0);
+    }
 
-.popup-img {
-  width: 120px;
-  height: 150px;
-  object-fit: cover;
-  border-radius: 10px;
-}
+    /* =========================
+       POPUP STYLES
+       ========================= */
 
-.popup-name {
-  font-weight: bold;
-  font-size: 15px;
-  margin-bottom: 6px;
-}
+    .popup-card {
+      display: flex;
+      gap: 12px;
+      width: 300px;
+      font-family: Arial;
+      align-items: center;
+    }
 
-.popup-contact {
-  font-size: 12.5px;
-  line-height: 1.5;
-}
+    .popup-img {
+      width: 120px;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
 
-/* --- MOBILE FIX --- */
-@media (max-width: 600px) {
+    .popup-name {
+      font-weight: bold;
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
 
-  .leaflet-popup-content {
-    margin: 10px !important;
-  }
-
-  .popup-card {
-    width: 90vw;              /* nearly full screen */
-    gap: 16px;
-  }
-
-  .popup-img {
-    width: 140px;
-    height: 180px;
-  }
-
-  .popup-name {
-    font-size: 18px;
-  }
-
-  .popup-contact {
-    font-size: 15px;
-  }
-
-}
-
-.leaflet-popup-content-wrapper {
-  max-width: 95vw;
-}
-
+    .popup-contact {
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
   </style>
 </head>
 
@@ -84,234 +65,210 @@
 
 <script>
 
-const map = L.map('map').setView([44.5, -93.5], 6);
+const map = L.map('map', {
+  preferCanvas: true
+}).setView([44.5, -96], 5);
 
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; OpenStreetMap &copy; CARTO'
+  updateWhenZooming: false,
+  keepBuffer: 2
 }).addTo(map);
-
-const layerGroup = L.layerGroup().addTo(map);
 
 // ---------------- REPS ----------------
 const reps = {
-  "NE_IA_SOUTH_MN": { name:"Tristen Durant", email:"tldurant@lpgnh3.com", phone:"(763) 234-8661", photo:"./photos/Tristen.jpg" },
-  "ND_NORTH_MN": { name:"Darin Adolphson", email:"djadolphsen@lpgnh3.com", phone:"(763) 234-7674", photo:"./photos/Darin.jpg" },
-  "IL_IN_OH_MI": { name:"Matt Hall", email:"mwhall@lpgnh3.com", phone:"(309) 206-0533", photo:"./photos/Matt.jpg" },
-  "WI_UP_MI": { name:"Chris Mikula", email:"cmmikula@lpgnh3.com", phone:"(920) 470-0717", photo:"./photos/Chris.jpg" },
-  "SD_MT_ID_WY": { name:"Norm Steveson", email:"nrsteveson@lpgnh3.com", phone:"800-328-0314", photo:"./photos/Norm.jpg" },
-  "Southern_US": { name:"LPG & NH3 Supply", email:"sales@lpgnh3.com", phone:"800-328-0314", photo:"./photos/LPG.png" }
+  NE_IA_SOUTH_MN: { name:"Tristen Durant", email:"tldurant@lpgnh3.com", phone:"(763) 234-8661", photo:"./photos/Tristen.jpg" },
+  ND_NORTH_MN: { name:"Darin Adolphson", email:"djadolphsen@lpgnh3.com", phone:"(763) 234-7674", photo:"./photos/Darin.jpg" },
+  IL_IN_OH_MI: { name:"Matt Hall", email:"mwhall@lpgnh3.com", phone:"(309) 206-0533", photo:"./photos/Matt.jpg" },
+  WI_UP_MI: { name:"Chris Mikula", email:"cmmikula@lpgnh3.com", phone:"(920) 470-0717", photo:"./photos/Chris.jpg" },
+  SD_MT_ID_WY: { name:"Norm Steveson", email:"nrsteveson@lpgnh3.com", phone:"800-328-0314", photo:"./photos/Norm.jpg" },
+  IN_HOUSE: { name:"LPG & NH3 Supply", email:"sales@lpgnh3.com", phone:"800-328-0314", photo:"./photos/LPG.png" }
 };
 
-// ---------------- STYLE (SEAM ELIMINATION) ----------------
+// ---------------- STYLE ----------------
 function style(color) {
   return {
-    color: color,        // IMPORTANT: match fill exactly
-    weight: 0,           // no stroke
+    color: color,
+    weight: 0,
     opacity: 0,
     fillColor: color,
-    fillOpacity: 0.7,
-    smoothFactor: 0      // reduces rendering interpolation gaps
+    fillOpacity: 0.7
   };
 }
 
 // ---------------- POPUP ----------------
-function makePopup(rep) {
+function popup(rep) {
   return `
     <div class="popup-card">
-      <img src="${rep.photo}" class="popup-img" />
-      <div class="popup-text">
+      <img src="${rep.photo}" class="popup-img"/>
+      <div>
         <div class="popup-name">${rep.name}</div>
-        <div class="popup-contact">
-          ${rep.email}<br>${rep.phone}
-        </div>
+        <div class="popup-contact">${rep.email}<br>${rep.phone}</div>
       </div>
     </div>
   `;
 }
 
-// ---------------- TERRITORY ----------------
-function makeLayer(features, color, key) {
-
-  const baseStyle = style(color);
-
-  const layer = L.geoJSON(features, {
-
-    style: baseStyle,
-
-    onEachFeature: function (feature, l) {
-
-      l.on("mouseover", function () {
-        l.setStyle({ fillOpacity: 0.85 });
-      });
-
-      l.on("mouseout", function () {
-        l.setStyle({ fillOpacity: baseStyle.fillOpacity });
-      });
-
-      l.on("click", function () {
-        const rep = reps[key];
-
-        L.popup()
-          .setLatLng(l.getBounds().getCenter())
-          .setContent(makePopup(rep))
-          .openOn(map);
-      });
-
-    }
-  });
-
-  layer.addTo(layerGroup);
+// ---------------- STATE BORDERS (NEW FIX) ----------------
+function addStateBorders(states) {
+  L.geoJSON(states, {
+    style: {
+      color: "#2b2b2b",
+      weight: 1.1,
+      fillOpacity: 0
+    },
+    interactive: false
+  }).addTo(map);
 }
 
-// ---------------- LOAD DATA ----------------
-Promise.all([
-  fetch("./data/states.json").then(r => r.json()),
-  fetch("./data/counties.json").then(r => r.json())
-]).then(([statesData, counties]) => {
+// ---------------- HELPERS ----------------
+function splitHorizontal(feature, lat) {
+  const bbox = turf.bbox(feature);
 
-  const states = statesData.features;
+  const north = turf.bboxPolygon([bbox[0], lat, bbox[2], bbox[3]]);
+  const south = turf.bboxPolygon([bbox[0], bbox[1], bbox[2], lat]);
 
-  const getState = (name) =>
-    states.find(s => s.properties.NAME === name);
+  return {
+    north: turf.intersect(feature, north),
+    south: turf.intersect(feature, south)
+  };
+}
 
-  const mn = counties.features.filter(c => c.properties.STATE === "27");
+function splitVertical(feature, lng) {
+  const bbox = turf.bbox(feature);
 
-  const boundaryNames = new Set([
-    "Meeker","Hennepin","Ramsey","Washington",
-    "Chippewa","Lac qui Parle","Anoka","Wright"
-  ]);
+  const west = turf.bboxPolygon([bbox[0], bbox[1], lng, bbox[3]]);
+  const east = turf.bboxPolygon([lng, bbox[1], bbox[2], bbox[3]]);
 
-  const boundaryLatitudes = mn
-    .filter(c => boundaryNames.has(c.properties.NAME))
-    .map(c => turf.centroid(c).geometry.coordinates[1]);
+  return {
+    west: turf.intersect(feature, west),
+    east: turf.intersect(feature, east)
+  };
+}
 
-  const splitLat =
-    boundaryLatitudes.reduce((a,b) => a + b, 0) / boundaryLatitudes.length;
+// ---------------- ADD LAYER ----------------
+function addLayer(feature, color, repKey) {
+  if (!feature) return;
 
-  const mnNorth = [];
-  const mnSouth = [];
+  L.geoJSON(feature, {
+    style: style(color),
+    onEachFeature: (f, l) => {
+      l.on("mouseover", () => l.setStyle({ fillOpacity: 0.85 }));
+      l.on("mouseout", () => l.setStyle({ fillOpacity: 0.7 }));
+      l.on("click", () => {
+        L.popup()
+          .setLatLng(l.getBounds().getCenter())
+          .setContent(popup(reps[repKey]))
+          .openOn(map);
+      });
+    }
+  }).addTo(map);
+}
 
-  mn.forEach(c => {
-    const lat = turf.centroid(c).geometry.coordinates[1];
-    if (lat >= splitLat) mnNorth.push(c);
-    else mnSouth.push(c);
+// ---------------- SNAP ----------------
+function snap(feature) {
+  return turf.truncate(feature, {
+    precision: 5,
+    mutate: false
+  });
+}
+
+// ---------------- MI ----------------
+const MI_UP_COUNTIES = new Set([
+  "gogebic","ontonagon","houghton","keweenaw","baraga",
+  "marquette","alger","schoolcraft","luce","chippewa","mackinac",
+  "iron","dickinson","delta","menominee"
+]);
+
+function buildMichigan(counties) {
+
+  let up = [];
+  let lp = [];
+
+  counties.forEach(c => {
+
+    const props = c.properties || {};
+
+    const geoid = String(props.GEO_ID || "");
+    if (!geoid.startsWith("0500000US26")) return;
+
+    let name = (props.NAME || "")
+      .replace(" County", "")
+      .trim()
+      .toLowerCase();
+
+    if (MI_UP_COUNTIES.has(name)) up.push(c);
+    else lp.push(c);
   });
 
-  const miLower = counties.features.filter(c =>
-    c.properties.STATE === "26"
-  );
+  if (up.length) {
+    addLayer(turf.featureCollection(up), "#845ef7", "WI_UP_MI");
+  }
 
-  const miUP = miLower.filter(c =>
-    ["Alger","Baraga","Chippewa","Delta","Dickinson","Gogebic",
-     "Houghton","Iron","Keweenaw","Luce","Mackinac",
-     "Marquette","Menominee","Ontonagon","Schoolcraft"]
-    .includes(c.properties.NAME)
-  );
+  if (lp.length) {
+    addLayer(turf.featureCollection(lp), "#f59f00", "IL_IN_OH_MI");
+  }
+}
 
-  const miLowerOnly = miLower.filter(c => !miUP.includes(c));
+// ---------------- MAIN LOAD ----------------
+fetch("./data/states.json")
+  .then(r => r.json())
+  .then(data => {
 
-  const sd = counties.features.filter(c =>
-  c.properties.STATE === "46"
-);
+    const states = data.features;
+    const get = name => states.find(s => s.properties.NAME === name);
 
-const sdNorthNames = new Set([
-  "Harding","Perkins","Butte","Ziebach","Corson","Dewey",
-  "Potter","Faulk","Edmunds","Walworth","Campbell",
-  "McPherson","Brown","Spink","Clark","Codington",
-  "Grant","Roberts","Marshall","Day","Hamlin","Deuel"
-]);
+    const MN = get("Minnesota");
+    const SD = get("South Dakota");
 
-const sdSouthNames = new Set([
-  "Sully","Stanley","Haakon","Jones","Lyman","Hughes",
-  "Hyde","Hand","Beadle","Kingsbury","Brookings","Moody",
-  "Lake","Miner","Sanborn","Jerauld","Buffalo","Brule",
-  "Aurora","Davison","Hanson","McCook","Minnehaha",
-  "Turner","Lincoln","Union","Clay","Yankton","Hutchinson",
-  "Douglas","Charles Mix","Gregory","Tripp","Todd",
-  "Mellette","Jackson","Bennett", "Bon Homme"
-]);
+    const mnSplit = splitHorizontal(MN, 45.041907);
 
-const sdNorth = sd.filter(c => sdNorthNames.has(c.properties.NAME));
-const sdSouth = sd.filter(c => sdSouthNames.has(c.properties.NAME));
+    const sdSplitTop = splitHorizontal(SD, 44.756391);
+    const sdBottomSplit = splitVertical(sdSplitTop.south, -102.239981);
 
-  // ---------------- TERRITORIES ----------------
+    const sdNorth = sdSplitTop.north;
+    const sdSouthEast = sdBottomSplit.east;
+    const sdSouthWest = sdBottomSplit.west;
 
-  makeLayer([getState("Nebraska"), getState("Iowa"), ...mnSouth, ...sdSouth], "#4dabf7", "NE_IA_SOUTH_MN");
+    // TERRITORIES
+    addLayer(turf.union(get("North Dakota"), mnSplit.north), "#51cf66", "ND_NORTH_MN");
+    addLayer(sdNorth, "#51cf66", "ND_NORTH_MN");
 
-  makeLayer([getState("Illinois"), getState("Indiana"), getState("Ohio"), ...miLowerOnly], "#f59f00", "IL_IN_OH_MI");
+    addLayer(turf.union(get("Nebraska"), get("Iowa")), "#4dabf7", "NE_IA_SOUTH_MN");
+    addLayer(mnSplit.south, "#4dabf7", "NE_IA_SOUTH_MN");
+    addLayer(sdSouthEast, "#4dabf7", "NE_IA_SOUTH_MN");
 
-  makeLayer([getState("Wisconsin"), ...miUP], "#845ef7", "WI_UP_MI");
+    addLayer(sdSouthWest, "#ff6b6b", "SD_MT_ID_WY");
 
-  makeLayer(
-  [
-    getState("California"),
-    getState("Nevada"),
-    getState("Utah"),
-    getState("Arizona"),
-    getState("Colorado"),
-    getState("New Mexico"),
-    getState("Kansas"),
-    getState("Oklahoma"),
-    getState("Texas"),
-    getState("Louisiana"),
-    getState("Arkansas"),
-    getState("Missouri"),
-    getState("Kentucky"),
-    getState("Tennessee"),
-    getState("Mississippi"),
-    getState("Alabama"),
-    getState("Georgia"),
-    getState("Florida"),
-    getState("South Carolina"),
-    getState("North Carolina"),
-    getState("Virginia"),
-    getState("West Virginia"),
-    getState("Pennsylvania"),
-    getState("New York"),
-    getState("Maine"),
-    getState("Vermont"),
-    getState("Maryland"),
-    getState("Delaware"),
-    getState("New Jersey"),
-    getState("Connecticut"),
-    getState("Massachusetts"),
-    getState("Rhode Island"),
-    getState("New Hampshire")
-  ],
-  "#adb5bd",
-  "Southern_US"
-);
+    ["Montana","Idaho","Wyoming","Washington","Oregon"].forEach(s =>
+      addLayer(get(s), "#ff6b6b", "SD_MT_ID_WY")
+    );
 
-  // ND + Northern MN + Northern SD
-makeLayer(
-  [getState("North Dakota"), ...mnNorth, ...sdNorth],
-  "#51cf66",
-  "ND_NORTH_MN"
-);
+    ["Illinois","Indiana","Ohio"].forEach(s =>
+      addLayer(get(s), "#f59f00", "IL_IN_OH_MI")
+    );
 
-// IA + Southern MN + NE + Southern SD
-makeLayer(
-  [getState("Nebraska"), getState("Iowa"), ...mnSouth, ...sdSouth],
-  "#4dabf7",
-  "NE_IA_SOUTH_MN"
-);
+    addLayer(get("Wisconsin"), "#845ef7", "WI_UP_MI");
 
-// Remaining SD (if any) stays with west territory
-const assignedSD = new Set([...sdNorthNames, ...sdSouthNames]);
+    fetch("./data/counties.json")
+      .then(r => r.json())
+      .then(cdata => buildMichigan(cdata.features));
 
-const sdRemaining = sd.filter(c =>
-  !assignedSD.has(c.properties.NAME)
-);
+    const assigned = new Set([
+      "Minnesota","South Dakota","North Dakota","Nebraska","Iowa",
+      "Montana","Idaho","Wyoming","Washington","Oregon",
+      "Illinois","Indiana","Ohio","Wisconsin","Michigan"
+    ]);
 
-makeLayer(
-  [...sdRemaining, getState("Montana"), getState("Idaho"), getState("Wyoming"), getState("Washington"), getState("Oregon")],
-  "#ff6b6b",
-  "SD_MT_ID_WY"
-);
+    states.forEach(s => {
+      if (!assigned.has(s.properties.NAME)) {
+        addLayer(snap(s), "#adb5bd", "IN_HOUSE");
+      }
+    });
 
-}).catch(err => {
-  console.error("LOAD ERROR:", err);
-});
+    // ✅ FINAL STEP: draw borders ON TOP of everything
+    addStateBorders(states);
+
+  });
 
 </script>
 
