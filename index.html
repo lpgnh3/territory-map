@@ -195,6 +195,41 @@ function style(color) {
   };
 }
 
+  function addStateBorders(states) {
+  L.geoJSON(states, {
+    style: {
+      color: "#2b2b2b",
+      weight: 1.1,
+      fillOpacity: 0
+    },
+    interactive: false
+  }).addTo(map);
+}
+
+// ---------------- HELPERS ----------------
+function splitHorizontal(feature, lat) {
+  const bbox = turf.bbox(feature);
+
+  const north = turf.bboxPolygon([bbox[0], lat, bbox[2], bbox[3]]);
+  const south = turf.bboxPolygon([bbox[0], bbox[1], bbox[2], lat]);
+
+  return {
+    north: turf.intersect(feature, north),
+    south: turf.intersect(feature, south)
+  };
+}
+
+function splitVertical(feature, lng) {
+  const bbox = turf.bbox(feature);
+
+  const west = turf.bboxPolygon([bbox[0], bbox[1], lng, bbox[3]]);
+  const east = turf.bboxPolygon([lng, bbox[1], bbox[2], bbox[3]]);
+
+  return {
+    west: turf.intersect(feature, west),
+    east: turf.intersect(feature, east)
+  };
+}
 // ---------------- ADD LAYER ----------------
 function addLayer(feature, color, repKey) {
   if (!feature) return;
