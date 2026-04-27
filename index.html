@@ -70,13 +70,14 @@
 @media (max-width: 768px) {
 
   .leaflet-popup-content-wrapper {
-    width: 92vw !important;
-    max-width: 92vw !important;
-  }
+  width: auto !important;
+  max-width: 90vw !important;
+}
 
-  .leaflet-popup-content {
-    width: 92vw !important;
-  }
+.leaflet-popup-content {
+  width: auto !important;
+  max-width: 90vw !important;
+}
 
   .popup-card {
     width: 100% !important;
@@ -198,7 +199,9 @@ function addLayer(feature, color, repKey) {
       l.on("mouseout", () => l.setStyle({ fillOpacity: 0.7 }));
       l.on("click", () => {
         L.popup({
-  maxWidth: 350,
+  maxWidth: 500,
+  minWidth: 300,
+  autoPan: true,
   autoPanPadding: [20, 80],
   className: "mobile-popup"
 })
