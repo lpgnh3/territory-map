@@ -6,17 +6,12 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
-    #map {
-      height: 100vh;
-      width: 100%;
-    }
+    #map { height: 100vh; width: 100%; }
 
-    /* =========================
-       MAP CLEANUP
-    ========================= */
     .leaflet-overlay-pane svg {
       shape-rendering: geometricPrecision;
     }
@@ -32,7 +27,36 @@
     }
 
     /* =========================
-       SIDE PANEL (DESKTOP)
+       POPUP CONTENT (BASE)
+    ========================= */
+    .popup-card {
+      display: flex;
+      gap: 12px;
+      width: 300px;
+      font-family: Arial;
+      align-items: center;
+    }
+
+    .popup-img {
+      width: 120px;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+
+    .popup-name {
+      font-weight: bold;
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+
+    .popup-contact {
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+
+    /* =========================
+       DESKTOP SIDE PANEL
     ========================= */
     #infoPanel {
       position: fixed;
@@ -49,85 +73,55 @@
       overflow-y: auto;
     }
 
-    #infoPanel.open {
-      right: 0;
-    }
-
-    #infoClose {
-      cursor: pointer;
-      font-size: 18px;
-      margin-bottom: 10px;
-      display: inline-block;
-    }
-
-    .panel-img {
-      width: 100%;
-      height: 220px;
-      object-fit: cover;
-      border-radius: 10px;
-      margin-bottom: 12px;
-    }
-
-    .panel-name {
-      font-size: 20px;
-      font-weight: bold;
-      margin-bottom: 8px;
-    }
-
-    .panel-contact {
-      font-size: 14px;
-      line-height: 1.6;
-    }
+    #infoPanel.open { right: 0; }
 
     /* =========================
        MOBILE BOTTOM DRAWER
     ========================= */
-    .bottom-drawer {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+    #bottomDrawer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: -60%;
+      height: 35vh;
+      max-height: 280px;
 
-  height: 40vh;          /* 👈 key change (controls “too tall”) */
-  max-height: 320px;     /* 👈 prevents giant iPhone expansion */
+      background: white;
+      z-index: 1200;
 
-  background: white;
-  border-top-left-radius: 18px;
-  border-top-right-radius: 18px;
+      border-top-left-radius: 18px;
+      border-top-right-radius: 18px;
 
-  z-index: 500;
+      box-shadow: 0 -8px 25px rgba(0,0,0,0.2);
 
-  padding: 12px 14px;
-  box-shadow: 0 -8px 30px rgba(0,0,0,0.2);
+      padding: 12px 14px;
+      overflow-y: auto;
 
-  overflow-y: auto;
-}
+      transition: bottom 0.25s ease;
+      font-family: Arial;
+    }
 
     #bottomDrawer.open {
       bottom: 0;
     }
 
     .drawer-handle {
-  width: 40px;
-  height: 5px;
-  background: #ccc;
-  border-radius: 10px;
-  margin: 0 auto 10px auto;
-}
+      width: 40px;
+      height: 5px;
+      background: #ccc;
+      border-radius: 10px;
+      margin: 6px auto 10px auto;
+    }
 
     /* =========================
-       RESPONSIVE SWITCH
+       MOBILE / DESKTOP SWITCH
     ========================= */
     @media (max-width: 768px) {
-      #infoPanel {
-        display: none;
-      }
+      #infoPanel { display: none; }
     }
 
     @media (min-width: 769px) {
-      #bottomDrawer {
-        display: none;
-      }
+      #bottomDrawer { display: none; }
     }
   </style>
 </head>
@@ -137,20 +131,19 @@
 <div id="map"></div>
 
 <!-- DESKTOP PANEL -->
-<div id="infoPanel">
-  <span id="infoClose">✕ Close</span>
-  <div id="panelContent"></div>
-</div>
+<div id="infoPanel"></div>
 
 <!-- MOBILE DRAWER -->
 <div id="bottomDrawer">
-  <div id="drawerHandle"></div>
+  <div class="drawer-handle"></div>
   <div id="drawerContent"></div>
 </div>
 
 <script>
 
-const map = L.map('map', { preferCanvas: true }).setView([39, -94], 5);
+const map = L.map('map', {
+  preferCanvas: true
+}).setView([39, -94], 5);
 
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
   updateWhenZooming: false,
@@ -167,49 +160,38 @@ const reps = {
   IN_HOUSE: { name:"LPG & NH3 Supply", email:"sales@lpgnh3.com", phone:"800-328-0314", photo:"./photos/LPG.png" }
 };
 
-// ---------------- PANEL RENDER ----------------
+// ---------------- UI ----------------
 function render(repKey) {
-  const rep = reps[repKey];
-
+  const r = reps[repKey];
   return `
-    <img src="${rep.photo}" class="panel-img"/>
-    <div class="panel-name">${rep.name}</div>
-    <div class="panel-contact">
-      ${rep.email}<br/>
-      ${rep.phone}
+    <img src="${r.photo}" class="popup-img"/>
+    <div>
+      <div class="popup-name">${r.name}</div>
+      <div class="popup-contact">${r.email}<br>${r.phone}</div>
     </div>
   `;
 }
 
-// ---------------- UI CONTROL ----------------
-function openPanel(repKey) {
-  const isMobile = window.matchMedia("(max-width: 768px)").matches;
+function openUI(repKey) {
+  const isMobile = window.innerWidth <= 768;
 
   if (isMobile) {
     document.getElementById("drawerContent").innerHTML = render(repKey);
     document.getElementById("bottomDrawer").classList.add("open");
   } else {
-    document.getElementById("panelContent").innerHTML = render(repKey);
+    document.getElementById("infoPanel").innerHTML = render(repKey);
     document.getElementById("infoPanel").classList.add("open");
   }
 }
-
-document.getElementById("infoClose").onclick = () => {
-  document.getElementById("infoPanel").classList.remove("open");
-};
-
-document.getElementById("bottomDrawer").onclick = () => {
-  document.getElementById("bottomDrawer").classList.remove("open");
-};
 
 // ---------------- STYLE ----------------
 function style(color) {
   return {
     color: "#000",
-    weight: 2,
+    weight: 1.5,
     opacity: 1,
     fillColor: color,
-    fillOpacity: 0.9
+    fillOpacity: 0.85
   };
 }
 
@@ -220,9 +202,7 @@ function addLayer(feature, color, repKey) {
   L.geoJSON(feature, {
     style: style(color),
     onEachFeature: (f, l) => {
-      l.on("click", () => {
-        openPanel(repKey);
-      });
+      l.on("click", () => openUI(repKey));
     }
   }).addTo(map);
 }
@@ -235,15 +215,84 @@ function snap(feature) {
   });
 }
 
-// ---------------- LOAD (your logic untouched) ----------------
+// ---------------- MI ----------------
+const MI_UP_COUNTIES = new Set([
+  "gogebic","ontonagon","houghton","keweenaw","baraga",
+  "marquette","alger","schoolcraft","luce","chippewa","mackinac",
+  "iron","dickinson","delta","menominee"
+]);
+
+function buildMichigan(counties) {
+  let up = [];
+  let lp = [];
+
+  counties.forEach(c => {
+    const props = c.properties || {};
+    const geoid = String(props.GEO_ID || "");
+    if (!geoid.startsWith("0500000US26")) return;
+
+    let name = (props.NAME || "")
+      .replace(" County", "")
+      .trim()
+      .toLowerCase();
+
+    if (MI_UP_COUNTIES.has(name)) up.push(c);
+    else lp.push(c);
+  });
+
+  if (up.length) addLayer(turf.featureCollection(up), "#845ef7", "WI_UP_MI");
+  if (lp.length) addLayer(turf.featureCollection(lp), "#f59f00", "IL_IN_OH_MI");
+}
+
+// ---------------- LOAD ----------------
 fetch("./data/states.json")
   .then(r => r.json())
   .then(data => {
 
     const states = data.features;
+    const get = name => states.find(s => s.properties.NAME === name);
+
+    const MN = get("Minnesota");
+    const SD = get("South Dakota");
+
+    const mnSplit = splitHorizontal(MN, 45.041907);
+    const sdSplitTop = splitHorizontal(SD, 44.756391);
+    const sdBottomSplit = splitVertical(sdSplitTop.south, -102.239981);
+
+    // TERRITORIES (UNCHANGED LOGIC)
+    addLayer(turf.union(get("North Dakota"), mnSplit.north), "#51cf66", "ND_NORTH_MN");
+    addLayer(sdSplitTop.north, "#51cf66", "ND_NORTH_MN");
+
+    addLayer(turf.union(get("Nebraska"), get("Iowa")), "#4dabf7", "NE_IA_SOUTH_MN");
+    addLayer(mnSplit.south, "#4dabf7", "NE_IA_SOUTH_MN");
+    addLayer(sdBottomSplit.east, "#4dabf7", "NE_IA_SOUTH_MN");
+
+    addLayer(sdBottomSplit.west, "#ff6b6b", "SD_MT_ID_WY");
+
+    ["Montana","Idaho","Wyoming","Washington","Oregon"].forEach(s =>
+      addLayer(get(s), "#ff6b6b", "SD_MT_ID_WY")
+    );
+
+    ["Illinois","Indiana","Ohio"].forEach(s =>
+      addLayer(get(s), "#f59f00", "IL_IN_OH_MI")
+    );
+
+    addLayer(get("Wisconsin"), "#845ef7", "WI_UP_MI");
+
+    fetch("./data/counties.json")
+      .then(r => r.json())
+      .then(cdata => buildMichigan(cdata.features));
+
+    const assigned = new Set([
+      "Minnesota","South Dakota","North Dakota","Nebraska","Iowa",
+      "Montana","Idaho","Wyoming","Washington","Oregon",
+      "Illinois","Indiana","Ohio","Wisconsin","Michigan"
+    ]);
 
     states.forEach(s => {
-      addLayer(snap(s), "#adb5bd", "IN_HOUSE");
+      if (!assigned.has(s.properties.NAME)) {
+        addLayer(snap(s), "#adb5bd", "IN_HOUSE");
+      }
     });
 
   });
