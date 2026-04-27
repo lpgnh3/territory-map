@@ -28,14 +28,14 @@
       transform: translateZ(0);
     }
 
-    /* ===== Popup Base ===== */
+    /* ===== Popup ===== */
     .popup-card {
-      display: flex;
-      gap: 12px;
-      width: 100%;
-      font-family: Arial;
-      align-items: center;
-    }
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  font-family: Arial;
+  align-items: center;
+}
 
     .popup-img {
       width: 90px;
@@ -59,40 +59,39 @@
       margin-bottom: 40px;
     }
 
-    /* ===== 🔥 REAL MOBILE FIX ===== */
+    /* ===== REAL MOBILE FIX ===== */
     .mobile-popup .leaflet-popup-content-wrapper {
       width: 90vw !important;
-      max-width: none !important;
+      max-width: 90vw !important;
       border-radius: 16px;
     }
 
     .mobile-popup .leaflet-popup-content {
       width: 100% !important;
-      max-width: none !important;
-      margin: 12px !important;
+      margin: 12px;
     }
 
     @media (max-width: 768px) {
 
-      .popup-card {
-        width: 100%;
-        gap: 16px;
-      }
+  .popup-card {
+    width: 100%;
+    gap: 16px;
+  }
 
-      .popup-img {
-        width: 120px;
-        height: 150px;
-      }
+  .popup-img {
+    width: 120px;
+    height: 150px;
+  }
 
-      .popup-name {
-        font-size: 18px;
-      }
+  .popup-name {
+    font-size: 18px;
+  }
 
-      .popup-contact {
-        font-size: 14px;
-      }
+  .popup-contact {
+    font-size: 14px;
+  }
 
-    }
+}
   </style>
 </head>
 
@@ -158,6 +157,31 @@ function addStateBorders(states) {
   }).addTo(map);
 }
 
+// ---------------- HELPERS ----------------
+function splitHorizontal(feature, lat) {
+  const bbox = turf.bbox(feature);
+
+  const north = turf.bboxPolygon([bbox[0], lat, bbox[2], bbox[3]]);
+  const south = turf.bboxPolygon([bbox[0], bbox[1], bbox[2], lat]);
+
+  return {
+    north: turf.intersect(feature, north),
+    south: turf.intersect(feature, south)
+  };
+}
+
+function splitVertical(feature, lng) {
+  const bbox = turf.bbox(feature);
+
+  const west = turf.bboxPolygon([bbox[0], bbox[1], lng, bbox[3]]);
+  const east = turf.bboxPolygon([lng, bbox[1], bbox[2], bbox[3]]);
+
+  return {
+    west: turf.intersect(feature, west),
+    east: turf.intersect(feature, east)
+  };
+}
+
 // ---------------- ADD LAYER (FIXED POPUP) ----------------
 function addLayer(feature, color, repKey) {
   if (!feature) return;
@@ -169,7 +193,8 @@ function addLayer(feature, color, repKey) {
       l.on("mouseout", () => l.setStyle({ fillOpacity: 0.7 }));
       l.on("click", () => {
         L.popup({
-          maxWidth: 1000, // 🔥 removes Leaflet constraint
+          maxWidth: "90%",
+          minWidth: 260,
           className: "mobile-popup",
           autoPanPadding: [20, 80]
         })
@@ -181,14 +206,102 @@ function addLayer(feature, color, repKey) {
   }).addTo(map);
 }
 
-// ---------------- LOAD ----------------
+// ---------------- SNAP ----------------
+function snap(feature) {
+  return turf.truncate(feature, {
+    precision: 5,
+    mutate: false
+  });
+}
+
+// ---------------- MI ----------------
+const MI_UP_COUNTIES = new Set([
+  "gogebic","ontonagon","houghton","keweenaw","baraga",
+  "marquette","alger","schoolcraft","luce","chippewa","mackinac",
+  "iron","dickinson","delta","menominee"
+]);
+
+function buildMichigan(counties) {
+  let up = [];
+  let lp = [];
+
+  counties.forEach(c => {
+    const props = c.properties || {};
+    const geoid = String(props.GEO_ID || "");
+    if (!geoid.startsWith("0500000US26")) return;
+
+    let name = (props.NAME || "")
+      .replace(" County", "")
+      .trim()
+      .toLowerCase();
+
+    if (MI_UP_COUNTIES.has(name)) up.push(c);
+    else lp.push(c);
+  });
+
+  if (up.length) {
+    addLayer(turf.featureCollection(up), "#845ef7", "WI_UP_MI");
+  }
+
+  if (lp.length) {
+    addLayer(turf.featureCollection(lp), "#f59f00", "IL_IN_OH_MI");
+  }
+}
+
+// ---------------- MAIN LOAD ----------------
 fetch("./data/states.json")
   .then(r => r.json())
   .then(data => {
+
     const states = data.features;
+    const get = name => states.find(s => s.properties.NAME === name);
+
+    const MN = get("Minnesota");
+    const SD = get("South Dakota");
+
+    const mnSplit = splitHorizontal(MN, 45.041907);
+
+    const sdSplitTop = splitHorizontal(SD, 44.756391);
+    const sdBottomSplit = splitVertical(sdSplitTop.south, -102.239981);
+
+    const sdNorth = sdSplitTop.north;
+    const sdSouthEast = sdBottomSplit.east;
+    const sdSouthWest = sdBottomSplit.west;
+
+    // TERRITORIES
+    addLayer(turf.union(get("North Dakota"), mnSplit.north), "#51cf66", "ND_NORTH_MN");
+    addLayer(sdNorth, "#51cf66", "ND_NORTH_MN");
+
+    addLayer(turf.union(get("Nebraska"), get("Iowa")), "#4dabf7", "NE_IA_SOUTH_MN");
+    addLayer(mnSplit.south, "#4dabf7", "NE_IA_SOUTH_MN");
+    addLayer(sdSouthEast, "#4dabf7", "NE_IA_SOUTH_MN");
+
+    addLayer(sdSouthWest, "#ff6b6b", "SD_MT_ID_WY");
+
+    ["Montana","Idaho","Wyoming","Washington","Oregon"].forEach(s =>
+      addLayer(get(s), "#ff6b6b", "SD_MT_ID_WY")
+    );
+
+    ["Illinois","Indiana","Ohio"].forEach(s =>
+      addLayer(get(s), "#f59f00", "IL_IN_OH_MI")
+    );
+
+    addLayer(get("Wisconsin"), "#845ef7", "WI_UP_MI");
+
+    fetch("./data/counties.json")
+      .then(r => r.json())
+      .then(cdata => buildMichigan(cdata.features));
+
+    const assigned = new Set([
+      "Minnesota","South Dakota","North Dakota","Nebraska","Iowa",
+      "Montana","Idaho","Wyoming","Washington","Oregon",
+      "Illinois","Indiana","Ohio","Wisconsin","Michigan"
+    ]);
 
     states.forEach(s => {
-      addLayer(s, "#adb5bd", "IN_HOUSE");
+      if (!assigned.has(s.properties.NAME)) {
+        addLayer(snap(s), "#adb5bd", "IN_HOUSE");
+      }
     });
 
     addStateBorders(states);
