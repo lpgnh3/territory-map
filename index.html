@@ -399,6 +399,22 @@ function addLayer(feature, color, repKey) {
       l.on("click", (e) => {
         L.DomEvent.stopPropagation(e);
         openUI(repKey);
+l.on("click", (e) => {
+        L.DomEvent.stopPropagation(e);
+        openUI(repKey);
+      });
+
+      // 🔥 HOVER IN
+      l.on("mouseover", () => {
+        l.setStyle({
+          fillOpacity: 0.9
+        });
+      });
+
+      // 🔥 HOVER OUT
+      l.on("mouseout", () => {
+        l.setStyle({
+          fillOpacity: 0.7
       });
     }
   }).addTo(map);
