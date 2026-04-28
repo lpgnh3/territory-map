@@ -189,38 +189,34 @@ function render(repKey) {
   `;
 }
 
+let activeTerritory = null;
+
+function closeUI() {
+  document.getElementById("infoPanel").classList.remove("open");
+  document.getElementById("bottomDrawer").classList.remove("open");
+  activeTerritory = null;
+}
+
 function openUI(repKey) {
   const isMobile = window.innerWidth <= 768;
 
-  const panel = document.getElementById("infoPanel");
-  const drawer = document.getElementById("bottomDrawer");
-
-  const content = isMobile
-    ? document.getElementById("drawerContent")
-    : panel;
-
-  // 🔁 TOGGLE behavior (click same territory closes it)
-  if (activeRep === repKey) {
+  // TOGGLE behavior (click same territory closes)
+  if (activeTerritory === repKey) {
     closeUI();
     return;
   }
 
-  activeRep = repKey;
+  activeTerritory = repKey;
 
-  content.innerHTML = render(repKey);
+  const html = render(repKey);
 
   if (isMobile) {
-    drawer.classList.add("open");
+    document.getElementById("drawerContent").innerHTML = html;
+    document.getElementById("bottomDrawer").classList.add("open");
   } else {
-    panel.classList.add("open");
+    document.getElementById("infoPanel").innerHTML = html;
+    document.getElementById("infoPanel").classList.add("open");
   }
-}
-
-function closeUI() {
-  activeRep = null;
-
-  document.getElementById("infoPanel").classList.remove("open");
-  document.getElementById("bottomDrawer").classList.remove("open");
 }
 
 // ---------------- DRAWER CONTROLS (FIXED) ----------------
