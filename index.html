@@ -83,8 +83,8 @@
       left: 0;
       right: 0;
       bottom: -60%;
-      height: 35vh;
-      max-height: 280px;
+      height: 28vh;
+      max-height: 240px;
 
       background: white;
       z-index: 1200;
@@ -199,6 +199,41 @@ drawer.addEventListener("click", (e) => {
   }
 });
 
+let startY = 0;
+let currentY = 0;
+let isDragging = false;
+
+const drawer = document.getElementById("bottomDrawer");
+
+drawer.addEventListener("touchstart", (e) => {
+  startY = e.touches[0].clientY;
+  isDragging = true;
+});
+
+drawer.addEventListener("touchmove", (e) => {
+  if (!isDragging) return;
+
+  currentY = e.touches[0].clientY;
+  const diff = currentY - startY;
+
+  // drag down only
+  if (diff > 0) {
+    drawer.style.transform = `translateY(${diff}px)`;
+  }
+});
+
+drawer.addEventListener("touchend", () => {
+  isDragging = false;
+
+  const diff = currentY - startY;
+
+  if (diff > 80) {
+    drawer.classList.remove("open"); // close
+  }
+
+  drawer.style.transform = "";
+});
+
 // ---------------- STYLE ----------------
 function style(color) {
   return {
@@ -215,7 +250,7 @@ function style(color) {
     style: {
       color: "#2b2b2b",
       weight: 1.1,
-      fillOpacity: 100
+      fillOpacity: 0
     },
     interactive: false
   }).addTo(map);
@@ -344,6 +379,8 @@ fetch("./data/states.json")
         addLayer(snap(s), "#adb5bd", "IN_HOUSE");
       }
     });
+
+    addStateBorders(states);
 
   });
 
