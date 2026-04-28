@@ -298,7 +298,6 @@ let activeTerritory = null;
 const reps = {
   NE_IA_SOUTH_MN: { name:"Tristen Durant", email:"tldurant@lpgnh3.com", phone:"(763) 234-8661", photo:"./photos/Tristen.jpg" },
   ND_NORTH_MN: { name:"Darin Adolphson", email:"djadolphsen@lpgnh3.com", phone:"(763) 234-7674", photo:"./photos/Darin.jpg" },
-  IL_IN_OH_MI: { name:"Matt Hall", email:"mwhall@lpgnh3.com", phone:"(309) 206-0533", photo:"./photos/Matt.jpg" },
   WI_UP_MI: { name:"Chris Mikula", email:"cmmikula@lpgnh3.com", phone:"(920) 470-0717", photo:"./photos/Chris.jpg" },
   SD_MT_ID_WY: { name:"Norm Steveson", email:"nrsteveson@lpgnh3.com", phone:"800-328-0314", photo:"./photos/Norm.jpg" },
   IN_HOUSE: { name:"LPG & NH3 Supply", email:"sales@lpgnh3.com", phone:"800-328-0314", photo:"./photos/LPG.png" }
@@ -357,13 +356,23 @@ function openUI(repKey) {
 map.on("click", () => closeUI());
 
 // ---------------- STYLE ----------------
+function fixSeams(feature) {
+  if (!feature) return null;
+
+  try {
+    return turf.buffer(feature, 0.01, { units: "degrees" });
+  } catch (e) {
+    return feature;
+  }
+}
 function style(color) {
   return {
-    color,
+    color: false,
+    stroke: false,
     weight: 0,
-    opacity: 0,
     fillColor: color,
-    fillOpacity: 0.7
+    fillOpacity: 0.72,
+    smoothFactor: 0
   };
 }
 
@@ -382,7 +391,9 @@ function safeUnion(a, b) {
 function addLayer(feature, color, repKey) {
   if (!feature) return;
 
-  L.geoJSON(feature, {
+  const fixed = fixSeams(feature); // 👈 THIS LINE FIXES GAPS
+
+  L.geoJSON(fixed, {
     style: style(color),
     onEachFeature: (f, l) => {
       l.on("click", (e) => {
@@ -465,7 +476,7 @@ fetch("./data/states.json")
     );
 
     ["Illinois","Indiana","Ohio"].forEach(s =>
-      addLayer(get(s), "#f59f00", "IL_IN_OH_MI")
+      addLayer(get(s), "#adb5bd", "IN_HOUSE")
     );
 
     addLayer(get("Wisconsin"), "#845ef7", "WI_UP_MI");
@@ -493,7 +504,7 @@ fetch("./data/states.json")
         });
 
         if (up.length) addLayer(turf.featureCollection(up), "#845ef7", "WI_UP_MI");
-        if (lp.length) addLayer(turf.featureCollection(lp), "#f59f00", "IL_IN_OH_MI");
+        if (lp.length) addLayer(turf.featureCollection(lp), "#adb5bd", "IN_HOUSE");
       });
 
     const assigned = new Set([
