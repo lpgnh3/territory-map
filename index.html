@@ -27,7 +27,7 @@
     }
 
     /* =========================
-       POPUP CONTENT (BASE)
+       POPUP
     ========================= */
     .popup-card {
       display: flex;
@@ -56,7 +56,7 @@
     }
 
     /* =========================
-       DESKTOP SIDE PANEL
+       DESKTOP PANEL
     ========================= */
     #infoPanel {
       position: fixed;
@@ -76,7 +76,7 @@
     #infoPanel.open { right: 0; }
 
     /* =========================
-       MOBILE BOTTOM DRAWER
+       MOBILE DRAWER
     ========================= */
     #bottomDrawer {
       position: fixed;
@@ -97,13 +97,11 @@
       padding: 12px 14px;
       overflow-y: auto;
 
-      transition: bottom 0.25s ease;
+      transition: bottom 0.25s ease, transform 0.2s ease;
       font-family: Arial;
     }
 
-    #bottomDrawer.open {
-      bottom: 0;
-    }
+    #bottomDrawer.open { bottom: 0; }
 
     .drawer-handle {
       width: 40px;
@@ -113,9 +111,6 @@
       margin: 6px auto 10px auto;
     }
 
-    /* =========================
-       MOBILE / DESKTOP SWITCH
-    ========================= */
     @media (max-width: 768px) {
       #infoPanel { display: none; }
     }
@@ -130,10 +125,8 @@
 
 <div id="map"></div>
 
-<!-- DESKTOP PANEL -->
 <div id="infoPanel"></div>
 
-<!-- MOBILE DRAWER -->
 <div id="bottomDrawer">
   <div class="drawer-handle"></div>
   <div id="drawerContent"></div>
@@ -183,27 +176,24 @@ function openUI(repKey) {
     document.getElementById("infoPanel").classList.add("open");
   }
 }
-  const drawer = document.getElementById("bottomDrawer");
+
+// ---------------- DRAWER CONTROLS (FIXED) ----------------
+const drawer = document.getElementById("bottomDrawer");
 const handle = document.querySelector(".drawer-handle");
 
-// tap handle closes
 handle.addEventListener("click", (e) => {
   e.stopPropagation();
   drawer.classList.remove("open");
 });
 
-// tap outside content closes
 drawer.addEventListener("click", (e) => {
-  if (e.target === drawer) {
-    drawer.classList.remove("open");
-  }
+  if (e.target === drawer) drawer.classList.remove("open");
 });
 
+// swipe down to close
 let startY = 0;
 let currentY = 0;
 let isDragging = false;
-
-const drawer = document.getElementById("bottomDrawer");
 
 drawer.addEventListener("touchstart", (e) => {
   startY = e.touches[0].clientY;
@@ -216,7 +206,6 @@ drawer.addEventListener("touchmove", (e) => {
   currentY = e.touches[0].clientY;
   const diff = currentY - startY;
 
-  // drag down only
   if (diff > 0) {
     drawer.style.transform = `translateY(${diff}px)`;
   }
@@ -227,9 +216,7 @@ drawer.addEventListener("touchend", () => {
 
   const diff = currentY - startY;
 
-  if (diff > 80) {
-    drawer.classList.remove("open"); // close
-  }
+  if (diff > 80) drawer.classList.remove("open");
 
   drawer.style.transform = "";
 });
@@ -237,7 +224,7 @@ drawer.addEventListener("touchend", () => {
 // ---------------- STYLE ----------------
 function style(color) {
   return {
-    color: color,
+    color,
     weight: 0,
     opacity: 0,
     fillColor: color,
@@ -245,7 +232,20 @@ function style(color) {
   };
 }
 
-  function addStateBorders(states) {
+// ---------------- LAYERS ----------------
+function addLayer(feature, color, repKey) {
+  if (!feature) return;
+
+  L.geoJSON(feature, {
+    style: style(color),
+    onEachFeature: (f, l) => {
+      l.on("click", () => openUI(repKey));
+    }
+  }).addTo(map);
+}
+
+// ---------------- BORDERS ----------------
+function addStateBorders(states) {
   L.geoJSON(states, {
     style: {
       color: "#2b2b2b",
@@ -280,24 +280,10 @@ function splitVertical(feature, lng) {
     east: turf.intersect(feature, east)
   };
 }
-// ---------------- ADD LAYER ----------------
-function addLayer(feature, color, repKey) {
-  if (!feature) return;
-
-  L.geoJSON(feature, {
-    style: style(color),
-    onEachFeature: (f, l) => {
-      l.on("click", () => openUI(repKey));
-    }
-  }).addTo(map);
-}
 
 // ---------------- SNAP ----------------
 function snap(feature) {
-  return turf.truncate(feature, {
-    precision: 5,
-    mutate: false
-  });
+  return turf.truncate(feature, { precision: 5, mutate: false });
 }
 
 // ---------------- MI ----------------
@@ -344,7 +330,6 @@ fetch("./data/states.json")
     const sdSplitTop = splitHorizontal(SD, 44.756391);
     const sdBottomSplit = splitVertical(sdSplitTop.south, -102.239981);
 
-    // TERRITORIES (UNCHANGED LOGIC)
     addLayer(turf.union(get("North Dakota"), mnSplit.north), "#51cf66", "ND_NORTH_MN");
     addLayer(sdSplitTop.north, "#51cf66", "ND_NORTH_MN");
 
