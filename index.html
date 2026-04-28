@@ -26,6 +26,7 @@
       transform: translateZ(0);
     }
 
+    /* POPUP */
     .popup-card {
       display: flex;
       gap: 12px;
@@ -52,7 +53,7 @@
       line-height: 1.5;
     }
 
-
+    /* DESKTOP PANEL */
     #infoPanel {
       position: fixed;
       top: 0;
@@ -70,14 +71,12 @@
 
     #infoPanel.open { right: 0; }
 
-    /* =========================
-       MOBILE DRAWER
-    ========================= */
+    /* MOBILE DRAWER */
     #bottomDrawer {
       position: fixed;
       left: 0;
       right: 0;
-      bottom: -60%;
+      bottom: 0;
       height: 28vh;
       max-height: 240px;
 
@@ -92,19 +91,14 @@
       padding: 12px 14px;
       overflow-y: auto;
 
-      transition: bottom 0.25s ease, transform 0.2s ease;
+      transform: translateY(100%);
+      transition: transform 0.25s ease;
       font-family: Arial;
     }
 
-    #bottomDrawer.open { bottom: 0; }
-
-    #bottomDrawer {
-  transform: translateY(100%);
-}
-
-#bottomDrawer.open {
-  transform: translateY(0);
-}
+    #bottomDrawer.open {
+      transform: translateY(0);
+    }
 
     .drawer-handle {
       width: 40px;
@@ -115,22 +109,22 @@
     }
 
     .drawer-card {
-  display: flex;
-  flex-direction: row-reverse; /* 👈 puts image on RIGHT, text on LEFT */
-  gap: 12px;
-  align-items: center;
-}
+      display: flex;
+      flex-direction: row-reverse;
+      gap: 12px;
+      align-items: center;
+    }
 
-.drawer-img {
-  width: 90px;
-  height: 90px;
-  object-fit: cover;
-  border-radius: 12px;
-}
+    .drawer-img {
+      width: 90px;
+      height: 110px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
 
-.drawer-text {
-  flex: 1;
-}
+    .drawer-text {
+      flex: 1;
+    }
 
     @media (max-width: 768px) {
       #infoPanel { display: none; }
@@ -145,7 +139,6 @@
 <body>
 
 <div id="map"></div>
-
 <div id="infoPanel"></div>
 
 <div id="bottomDrawer">
@@ -164,13 +157,8 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
   keepBuffer: 2
 }).addTo(map);
 
-map.on("click", closeUI);
-
-map.on("click", () => {
-  closeUI();
-});
-
-let activeRep = null;
+// ---------------- STATE ----------------
+let activeTerritory = null;
 
 // ---------------- REPS ----------------
 const reps = {
@@ -188,22 +176,15 @@ function render(repKey) {
 
   return `
     <div style="display:flex; gap:12px; align-items:center;">
-
       <div style="flex:1;">
         <div class="popup-name">${r.name}</div>
-        <div class="popup-contact">
-          ${r.email}<br>
-          ${r.phone}
-        </div>
+        <div class="popup-contact">${r.email}<br>${r.phone}</div>
       </div>
-
       <img src="${r.photo}"
            style="width:90px; height:110px; object-fit:cover; border-radius:10px;" />
-
     </div>
   `;
 }
-let activeTerritory = null;
 
 function closeUI() {
   document.getElementById("infoPanel").classList.remove("open");
@@ -214,7 +195,6 @@ function closeUI() {
 function openUI(repKey) {
   const isMobile = window.innerWidth <= 768;
 
-  // TOGGLE behavior (click same territory closes)
   if (activeTerritory === repKey) {
     closeUI();
     return;
@@ -233,49 +213,8 @@ function openUI(repKey) {
   }
 }
 
-// ---------------- DRAWER CONTROLS (FIXED) ----------------
-const drawer = document.getElementById("bottomDrawer");
-const handle = document.querySelector(".drawer-handle");
-
-handle.addEventListener("click", (e) => {
-  e.stopPropagation();
-  drawer.classList.remove("open");
-});
-
-drawer.addEventListener("click", (e) => {
-  if (e.target === drawer) drawer.classList.remove("open");
-});
-
-// swipe down to close
-let startY = 0;
-let currentY = 0;
-let isDragging = false;
-
-drawer.addEventListener("touchstart", (e) => {
-  startY = e.touches[0].clientY;
-  isDragging = true;
-});
-
-drawer.addEventListener("touchmove", (e) => {
-  if (!isDragging) return;
-
-  currentY = e.touches[0].clientY;
-  const diff = currentY - startY;
-
-  if (diff > 0) {
-    drawer.style.transform = `translateY(${diff}px)`;
-  }
-});
-
-drawer.addEventListener("touchend", () => {
-  isDragging = false;
-
-  const diff = currentY - startY;
-
-  if (diff > 80) drawer.classList.remove("open");
-
-  drawer.style.transform = "";
-});
+// ---------------- MAP CLICK CLOSE (SAFE) ----------------
+map.on("click", () => closeUI());
 
 // ---------------- STYLE ----------------
 function style(color) {
@@ -288,6 +227,17 @@ function style(color) {
   };
 }
 
+// ---------------- SAFE UNION ----------------
+function safeUnion(a, b) {
+  if (!a || !b) return null;
+  try {
+    return turf.union(a, b);
+  } catch (e) {
+    console.log("union failed", e);
+    return null;
+  }
+}
+
 // ---------------- LAYERS ----------------
 function addLayer(feature, color, repKey) {
   if (!feature) return;
@@ -298,9 +248,15 @@ function addLayer(feature, color, repKey) {
       l.on("click", (e) => {
         L.DomEvent.stopPropagation(e);
         openUI(repKey);
-});
+      });
     }
   }).addTo(map);
+}
+
+// ---------------- SNAP ----------------
+function snap(feature) {
+  if (!feature) return null;
+  return turf.truncate(feature, { precision: 5, mutate: false });
 }
 
 // ---------------- BORDERS ----------------
@@ -317,61 +273,25 @@ function addStateBorders(states) {
 
 // ---------------- HELPERS ----------------
 function splitHorizontal(feature, lat) {
+  if (!feature) return { north:null, south:null };
+
   const bbox = turf.bbox(feature);
 
-  const north = turf.bboxPolygon([bbox[0], lat, bbox[2], bbox[3]]);
-  const south = turf.bboxPolygon([bbox[0], bbox[1], bbox[2], lat]);
-
   return {
-    north: turf.intersect(feature, north),
-    south: turf.intersect(feature, south)
+    north: turf.intersect(feature, turf.bboxPolygon([bbox[0], lat, bbox[2], bbox[3]])),
+    south: turf.intersect(feature, turf.bboxPolygon([bbox[0], bbox[1], bbox[2], lat]))
   };
 }
 
 function splitVertical(feature, lng) {
+  if (!feature) return { west:null, east:null };
+
   const bbox = turf.bbox(feature);
 
-  const west = turf.bboxPolygon([bbox[0], bbox[1], lng, bbox[3]]);
-  const east = turf.bboxPolygon([lng, bbox[1], bbox[2], bbox[3]]);
-
   return {
-    west: turf.intersect(feature, west),
-    east: turf.intersect(feature, east)
+    west: turf.intersect(feature, turf.bboxPolygon([bbox[0], bbox[1], lng, bbox[3]])),
+    east: turf.intersect(feature, turf.bboxPolygon([lng, bbox[1], bbox[2], bbox[3]]))
   };
-}
-
-// ---------------- SNAP ----------------
-function snap(feature) {
-  return turf.truncate(feature, { precision: 5, mutate: false });
-}
-
-// ---------------- MI ----------------
-const MI_UP_COUNTIES = new Set([
-  "gogebic","ontonagon","houghton","keweenaw","baraga",
-  "marquette","alger","schoolcraft","luce","chippewa","mackinac",
-  "iron","dickinson","delta","menominee"
-]);
-
-function buildMichigan(counties) {
-  let up = [];
-  let lp = [];
-
-  counties.forEach(c => {
-    const props = c.properties || {};
-    const geoid = String(props.GEO_ID || "");
-    if (!geoid.startsWith("0500000US26")) return;
-
-    let name = (props.NAME || "")
-      .replace(" County", "")
-      .trim()
-      .toLowerCase();
-
-    if (MI_UP_COUNTIES.has(name)) up.push(c);
-    else lp.push(c);
-  });
-
-  if (up.length) addLayer(turf.featureCollection(up), "#845ef7", "WI_UP_MI");
-  if (lp.length) addLayer(turf.featureCollection(lp), "#f59f00", "IL_IN_OH_MI");
 }
 
 // ---------------- LOAD ----------------
@@ -380,19 +300,21 @@ fetch("./data/states.json")
   .then(data => {
 
     const states = data.features;
-    const get = name => states.find(s => s.properties.NAME === name);
+    const get = n => states.find(s => s.properties.NAME === n);
 
     const MN = get("Minnesota");
     const SD = get("South Dakota");
+
+    if (!MN || !SD) return;
 
     const mnSplit = splitHorizontal(MN, 45.041907);
     const sdSplitTop = splitHorizontal(SD, 44.756391);
     const sdBottomSplit = splitVertical(sdSplitTop.south, -102.239981);
 
-    addLayer(turf.union(get("North Dakota"), mnSplit.north), "#51cf66", "ND_NORTH_MN");
+    addLayer(safeUnion(get("North Dakota"), mnSplit.north), "#51cf66", "ND_NORTH_MN");
     addLayer(sdSplitTop.north, "#51cf66", "ND_NORTH_MN");
 
-    addLayer(turf.union(get("Nebraska"), get("Iowa")), "#4dabf7", "NE_IA_SOUTH_MN");
+    addLayer(safeUnion(get("Nebraska"), get("Iowa")), "#4dabf7", "NE_IA_SOUTH_MN");
     addLayer(mnSplit.south, "#4dabf7", "NE_IA_SOUTH_MN");
     addLayer(sdBottomSplit.east, "#4dabf7", "NE_IA_SOUTH_MN");
 
@@ -410,7 +332,29 @@ fetch("./data/states.json")
 
     fetch("./data/counties.json")
       .then(r => r.json())
-      .then(cdata => buildMichigan(cdata.features));
+      .then(cdata => {
+        let up = [], lp = [];
+
+        cdata.features.forEach(c => {
+          const props = c.properties || {};
+          const geoid = String(props.GEO_ID || "");
+          if (!geoid.startsWith("0500000US26")) return;
+
+          let name = (props.NAME || "").replace(" County","").toLowerCase();
+
+          const upSet = new Set([
+            "gogebic","ontonagon","houghton","keweenaw","baraga",
+            "marquette","alger","schoolcraft","luce","chippewa","mackinac",
+            "iron","dickinson","delta","menominee"
+          ]);
+
+          if (upSet.has(name)) up.push(c);
+          else lp.push(c);
+        });
+
+        if (up.length) addLayer(turf.featureCollection(up), "#845ef7", "WI_UP_MI");
+        if (lp.length) addLayer(turf.featureCollection(lp), "#f59f00", "IL_IN_OH_MI");
+      });
 
     const assigned = new Set([
       "Minnesota","South Dakota","North Dakota","Nebraska","Iowa",
