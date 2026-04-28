@@ -6,31 +6,65 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
     #map { height: 100vh; width: 100%; }
 
-    .leaflet-interactive {
-      transition: fill-opacity 0.15s ease;
+    .leaflet-overlay-pane svg {
+      shape-rendering: geometricPrecision;
     }
 
     .leaflet-overlay-pane path {
       stroke: none !important;
+      stroke-linejoin: round;
+      stroke-linecap: round;
     }
 
-    .leaflet-container {
-      background: #fff;
+    .leaflet-interactive {
+      transition: fill-opacity 0.15s ease;
+}
+
+    .leaflet-pane svg {
+      transform: translateZ(0);
     }
 
     @font-face {
       font-family: 'AntonCustom';
       src: url('./data/anton.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+}
+
+    /* POPUP */
+    .popup-card {
+      display: flex;
+      gap: 12px;
+      width: 300px;
+      font-family: Arial;
+      align-items: center;
     }
 
-    /* UI */
+    .popup-img {
+      width: 120px;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+
+    .popup-name {
+      font-weight: bold;
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+
+    .popup-contact {
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+
+    /* DESKTOP PANEL */
     #infoPanel {
       position: fixed;
       top: 0;
@@ -42,11 +76,13 @@
       box-shadow: -2px 0 20px rgba(0,0,0,0.15);
       transition: right 0.25s ease;
       padding: 20px;
+      font-family: Arial;
       overflow-y: auto;
     }
 
     #infoPanel.open { right: 0; }
 
+    /* MOBILE DRAWER */
     #bottomDrawer {
       position: fixed;
       left: 0;
@@ -54,70 +90,199 @@
       bottom: 0;
       height: 28vh;
       max-height: 240px;
+
       background: white;
       z-index: 1200;
+
       border-top-left-radius: 18px;
       border-top-right-radius: 18px;
+
       box-shadow: 0 -8px 25px rgba(0,0,0,0.2);
+
       padding: 12px 14px;
       overflow-y: auto;
+
       transform: translateY(100%);
       transition: transform 0.25s ease;
+      font-family: Arial;
     }
 
-    #bottomDrawer.open { transform: translateY(0); }
+    #bottomDrawer.open {
+      transform: translateY(0);
+    }
+
+    .drawer-handle {
+      width: 40px;
+      height: 5px;
+      background: #ccc;
+      border-radius: 10px;
+      margin: 6px auto 10px auto;
+    }
+
+    .drawer-card {
+      display: flex;
+      flex-direction: row-reverse;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .drawer-img {
+      width: 90px;
+      height: 110px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+
+    .drawer-text {
+      flex: 1;
+    }
 
     @media (max-width: 768px) {
       #infoPanel { display: none; }
     }
+
     @media (min-width: 769px) {
       #bottomDrawer { display: none; }
     }
 
-    .ui-card {
-      display: flex;
-      gap: 16px;
-      align-items: center;
-      transition: transform 0.2s ease;
-    }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-    .ui-card:hover {
-      transform: translateY(-2px);
-    }
+/* =========================
+   CLEAN UI SYSTEM (FIXED)
+========================= */
 
-    .ui-img {
-      width: 140px;
-      height: 170px;
-      object-fit: cover;
-      border-radius: 12px;
-    }
+.ui-card {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.ui-card:hover {
+  transform: translateY(-2px);
+}
 
-    .ui-name {
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
+/* TEXT */
+.ui-name {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
 
-    .contact-btn {
-      display: inline-flex;
-      align-items: center;
-      margin-top: 8px;
-      padding: 10px 14px;
-      border-radius: 12px;
-      background: linear-gradient(135deg,#f8f9fa,#e9ecef);
-      border: 1px solid #dee2e6;
-      text-decoration: none;
-      color: #212529;
-      font-family: 'AntonCustom', sans-serif;
-      font-weight: 700;
-      font-size: 22px;
-      text-transform: uppercase;
-      transition: all 0.15s ease;
-    }
+.ui-contact {
+  font-size: 16px;
+  line-height: 1.6;
+}
 
-    .contact-btn:hover {
-      transform: translateY(-3px) scale(1.03);
-    }
+.ui-contact a {
+  display: block;
+  margin-top: 4px;
+  text-decoration: none;
+  color: #1c7ed6;
+  font-weight: 500;
+  font-size: 15px;
+}
+
+.ui-contact a:hover {
+  text-decoration: underline;
+}
+
+/* IMAGE BASE */
+.ui-img {
+  width: 140px;
+  height: 170px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+/* =========================
+   DESKTOP PANEL
+========================= */
+#infoPanel {
+  padding: 26px;
+}
+
+/* slightly larger desktop */
+#infoPanel .ui-img {
+  width: 160px;
+  height: 190px;
+}
+
+#infoPanel .ui-name {
+  font-size: 24px;
+}
+
+#infoPanel .ui-contact {
+  font-size: 17px;
+}
+
+/* =========================
+   MOBILE DRAWER (CENTERED)
+========================= */
+#bottomDrawer .ui-card {
+  align-items: center;
+  text-align: left;
+}
+
+#bottomDrawer .ui-img {
+  width: 120px;
+  height: 160px;
+  margin-top: 8px;
+}
+
+#bottomDrawer .ui-name {
+  font-size: 22px;
+  margin-top: 12px;
+}
+
+#bottomDrawer .ui-contact {
+  font-size: 16px;
+  margin-top: 6px;
+}
+
+.contact-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  margin-top: 8px;
+  padding: 10px 14px;
+
+  border-radius: 12px;
+
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border: 1px solid #dee2e6;
+
+  text-decoration: none;
+  color: #212529;
+
+  font-family: 'AntonCustom', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  font-style: italic;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+
+  transition: all 0.15s ease;
+}
+
+.contact-btn:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+
+  background: linear-gradient(135deg, #ffffff, #f1f3f5);
+
+  letter-spacing: 1px;
+}
+
+.contact-btn:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
   </style>
 </head>
 
@@ -125,7 +290,11 @@
 
 <div id="map"></div>
 <div id="infoPanel"></div>
-<div id="bottomDrawer"><div id="drawerContent"></div></div>
+
+<div id="bottomDrawer">
+  <div class="drawer-handle"></div>
+  <div id="drawerContent"></div>
+</div>
 
 <script>
 
@@ -138,8 +307,10 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
   keepBuffer: 2
 }).addTo(map);
 
+// ---------------- STATE ----------------
 let activeTerritory = null;
 
+// ---------------- REPS ----------------
 const reps = {
   NE_IA_SOUTH_MN: { name:"Tristen Durant", email:"tldurant@lpgnh3.com", phone:"(763) 234-8661", photo:"./photos/Tristen.jpg" },
   ND_NORTH_MN: { name:"Darin Adolphson", email:"djadolphsen@lpgnh3.com", phone:"(763) 234-7674", photo:"./photos/Darin.jpg" },
@@ -148,40 +319,91 @@ const reps = {
   IN_HOUSE: { name:"LPG & NH3 Supply", email:"sales@lpgnh3.com", phone:"800-328-0314", photo:"./photos/LPG.png" }
 };
 
-function render(k){
-  const r = reps[k];
+// ---------------- UI ----------------
+function render(repKey) {
+  const r = reps[repKey];
+
   return `
     <div class="ui-card">
+
       <img src="${r.photo}" class="ui-img"/>
-      <div>
+
+      <div style="flex:1;">
         <div class="ui-name">${r.name}</div>
-        <a class="contact-btn" href="mailto:${r.email}">Email</a>
-        <a class="contact-btn" href="tel:${r.phone.replace(/[^0-9+]/g,'')}">Call</a>
+
+        <div class="ui-contact">
+  <a href="mailto:${r.email}" class="contact-btn">Email</a>
+  <a href="tel:${r.phone.replace(/[^0-9+]/g, '')}" class="contact-btn">Call</a>
+</div>
       </div>
-    </div>`;
+
+    </div>
+  `;
 }
 
-function openUI(k){
-  const html = render(k);
-  if (window.innerWidth <= 768) {
+function closeUI() {
+  document.getElementById("infoPanel").classList.remove("open");
+  document.getElementById("bottomDrawer").classList.remove("open");
+  activeTerritory = null;
+}
+
+function openUI(repKey) {
+  const isMobile = window.innerWidth <= 768;
+
+  if (activeTerritory === repKey) {
+    closeUI();
+    return;
+  }
+
+  activeTerritory = repKey;
+
+  const html = render(repKey);
+
+  if (isMobile) {
     document.getElementById("drawerContent").innerHTML = html;
     document.getElementById("bottomDrawer").classList.add("open");
   } else {
     document.getElementById("infoPanel").innerHTML = html;
     document.getElementById("infoPanel").classList.add("open");
   }
-  activeTerritory = k;
 }
 
-map.on("click", () => {
-  document.getElementById("infoPanel").classList.remove("open");
-  document.getElementById("bottomDrawer").classList.remove("open");
-});
+// ---------------- MAP CLICK CLOSE (SAFE) ----------------
+map.on("click", () => closeUI());
 
-function style(c){
-  return { color:c, weight:0, fillColor:c, fillOpacity:0.7 };
+// ---------------- STYLE ----------------
+function fixSeams(feature) {
+  if (!feature) return null;
+
+  try {
+    return turf.buffer(feature, 0.01, { units: "degrees" });
+  } catch (e) {
+    return feature;
+  }
+}
+function style(color) {
+  return {
+    color: false,
+    stroke: false,
+    weight: 0,
+    fillColor: color,
+    fillOpacity: 0.72,
+    smoothFactor: 0
+  };
 }
 
+// ---------------- SAFE UNION ----------------
+function safeUnion(a, b) {
+  if (!a || !b) return null;
+  try {
+    return turf.union(a, b);
+  } catch (e) {
+    console.log("union failed", e);
+    return null;
+  }
+}
+
+// ---------------- LAYERS ----------------
 function addLayer(feature,color,key){
   if(!feature) return;
 
@@ -205,71 +427,126 @@ function addLayer(feature,color,key){
     }
   }).addTo(map);
 }
+// ---------------- SNAP ----------------
+function snap(feature) {
+  if (!feature) return null;
+  return turf.truncate(feature, { precision: 5, mutate: false });
+}
 
-// --- Turf helpers (unchanged) ---
-function splitHorizontal(f,lat){
-  const b=turf.bbox(f);
+// ---------------- BORDERS ----------------
+function addStateBorders(states) {
+  L.geoJSON(states, {
+    style: {
+      color: "#2b2b2b",
+      weight: 1.1,
+      fillOpacity: 0
+    },
+    interactive: false
+  }).addTo(map);
+}
+
+// ---------------- HELPERS ----------------
+function splitHorizontal(feature, lat) {
+  if (!feature) return { north:null, south:null };
+
+  const bbox = turf.bbox(feature);
+
   return {
-    north:turf.intersect(f,turf.bboxPolygon([b[0],lat,b[2],b[3]])),
-    south:turf.intersect(f,turf.bboxPolygon([b[0],b[1],b[2],lat]))
+    north: turf.intersect(feature, turf.bboxPolygon([bbox[0], lat, bbox[2], bbox[3]])),
+    south: turf.intersect(feature, turf.bboxPolygon([bbox[0], bbox[1], bbox[2], lat]))
   };
 }
 
-function splitVertical(f,lng){
-  const b=turf.bbox(f);
+function splitVertical(feature, lng) {
+  if (!feature) return { west:null, east:null };
+
+  const bbox = turf.bbox(feature);
+
   return {
-    west:turf.intersect(f,turf.bboxPolygon([b[0],b[1],lng,b[3]])),
-    east:turf.intersect(f,turf.bboxPolygon([lng,b[1],b[2],b[3]]))
+    west: turf.intersect(feature, turf.bboxPolygon([bbox[0], bbox[1], lng, bbox[3]])),
+    east: turf.intersect(feature, turf.bboxPolygon([lng, bbox[1], bbox[2], bbox[3]]))
   };
 }
 
+// ---------------- LOAD ----------------
 fetch("./data/states.json")
-.then(r=>r.json())
-.then(data=>{
+  .then(r => r.json())
+  .then(data => {
 
-  const states=data.features;
-  const get=n=>states.find(s=>s.properties.NAME===n);
+    const states = data.features;
+    const get = n => states.find(s => s.properties.NAME === n);
 
-  const MN=get("Minnesota");
-  const SD=get("South Dakota");
+    const MN = get("Minnesota");
+    const SD = get("South Dakota");
 
-  const mn=splitHorizontal(MN,45.041907);
-  const sdTop=splitHorizontal(SD,44.756391);
-  const sdBot=splitVertical(sdTop.south,-102.239981);
+    if (!MN || !SD) return;
 
-  addLayer(mn.north,"#51cf66","ND_NORTH_MN");
-  addLayer(mn.south,"#4dabf7","NE_IA_SOUTH_MN");
+    const mnSplit = splitHorizontal(MN, 45.041907);
+    const sdSplitTop = splitHorizontal(SD, 44.756391);
+    const sdBottomSplit = splitVertical(sdSplitTop.south, -102.239981);
 
-  addLayer(sdTop.north,"#51cf66","ND_NORTH_MN");
-  addLayer(sdBot.east,"#4dabf7","NE_IA_SOUTH_MN");
-  addLayer(sdBot.west,"#ff6b6b","SD_MT_ID_WY");
+    addLayer(safeUnion(get("North Dakota"), mnSplit.north), "#51cf66", "ND_NORTH_MN");
+    addLayer(sdSplitTop.north, "#51cf66", "ND_NORTH_MN");
 
-  ["Montana","Idaho","Wyoming","Washington","Oregon"].forEach(s=>
-    addLayer(get(s),"#ff6b6b","SD_MT_ID_WY")
-  );
+    addLayer(safeUnion(get("Nebraska"), get("Iowa")), "#4dabf7", "NE_IA_SOUTH_MN");
+    addLayer(mnSplit.south, "#4dabf7", "NE_IA_SOUTH_MN");
+    addLayer(sdBottomSplit.east, "#4dabf7", "NE_IA_SOUTH_MN");
 
-  ["Illinois","Indiana","Ohio"].forEach(s=>
-    addLayer(get(s),"#adb5bd","IN_HOUSE")
-  );
+    addLayer(sdBottomSplit.west, "#ff6b6b", "SD_MT_ID_WY");
 
-  addLayer(get("Wisconsin"),"#845ef7","WI_UP_MI");
+    ["Montana","Idaho","Wyoming","Washington","Oregon"].forEach(s =>
+      addLayer(get(s), "#ff6b6b", "SD_MT_ID_WY")
+    );
 
-  const assigned=new Set([
-    "Minnesota","South Dakota","North Dakota","Nebraska","Iowa",
-    "Montana","Idaho","Wyoming","Washington","Oregon",
-    "Illinois","Indiana","Ohio","Wisconsin","Michigan"
-  ]);
+    ["Illinois","Indiana","Ohio"].forEach(s =>
+      addLayer(get(s), "#adb5bd", "IN_HOUSE")
+    );
 
-  states.forEach(s=>{
-    if(!assigned.has(s.properties.NAME)){
-      addLayer(s,"#adb5bd","IN_HOUSE");
-    }
+    addLayer(get("Wisconsin"), "#845ef7", "WI_UP_MI");
+
+    fetch("./data/counties.json")
+      .then(r => r.json())
+      .then(cdata => {
+        let up = [], lp = [];
+
+        cdata.features.forEach(c => {
+          const props = c.properties || {};
+          const geoid = String(props.GEO_ID || "");
+          if (!geoid.startsWith("0500000US26")) return;
+
+          let name = (props.NAME || "").replace(" County","").toLowerCase();
+
+          const upSet = new Set([
+            "gogebic","ontonagon","houghton","keweenaw","baraga",
+            "marquette","alger","schoolcraft","luce","chippewa","mackinac",
+            "iron","dickinson","delta","menominee"
+          ]);
+
+          if (upSet.has(name)) up.push(c);
+          else lp.push(c);
+        });
+
+        if (up.length) addLayer(turf.featureCollection(up), "#845ef7", "WI_UP_MI");
+        if (lp.length) addLayer(turf.featureCollection(lp), "#adb5bd", "IN_HOUSE");
+      });
+
+    const assigned = new Set([
+      "Minnesota","South Dakota","North Dakota","Nebraska","Iowa",
+      "Montana","Idaho","Wyoming","Washington","Oregon",
+      "Illinois","Indiana","Ohio","Wisconsin","Michigan"
+    ]);
+
+    states.forEach(s => {
+      if (!assigned.has(s.properties.NAME)) {
+        addLayer(snap(s), "#adb5bd", "IN_HOUSE");
+      }
+    });
+
+    addStateBorders(states);
+
   });
 
-  L.geoJSON(states,{style:{color:"#2b2b2b",weight:1,fillOpacity:0},interactive:false}).addTo(map);
-
-});
-
 </script>
+
 </body>
 </html>
