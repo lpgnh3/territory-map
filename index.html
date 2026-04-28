@@ -108,6 +108,24 @@
       margin: 6px auto 10px auto;
     }
 
+    .drawer-card {
+  display: flex;
+  flex-direction: row-reverse; /* 👈 puts image on RIGHT, text on LEFT */
+  gap: 12px;
+  align-items: center;
+}
+
+.drawer-img {
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.drawer-text {
+  flex: 1;
+}
+
     @media (max-width: 768px) {
       #infoPanel { display: none; }
     }
@@ -157,11 +175,18 @@ const reps = {
 // ---------------- UI ----------------
 function render(repKey) {
   const r = reps[repKey];
+
   return `
-    <img src="${r.photo}" class="popup-img"/>
-    <div>
-      <div class="popup-name">${r.name}</div>
-      <div class="popup-contact">${r.email}<br>${r.phone}</div>
+    <div class="drawer-card">
+      <img src="${r.photo}" class="drawer-img"/>
+
+      <div class="drawer-text">
+        <div class="popup-name">${r.name}</div>
+        <div class="popup-contact">
+          ${r.email}<br>
+          ${r.phone}
+        </div>
+      </div>
     </div>
   `;
 }
