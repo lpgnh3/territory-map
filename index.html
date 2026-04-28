@@ -84,28 +84,32 @@
 
     /* MOBILE DRAWER */
     #bottomDrawer {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 28vh;
-      max-height: 240px;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
 
-      background: white;
-      z-index: 1200;
+  /* KEY CHANGE: no fixed vh */
+  height: auto;
+  max-height: 45%;
 
-      border-top-left-radius: 18px;
-      border-top-right-radius: 18px;
+  background: white;
+  z-index: 1200;
 
-      box-shadow: 0 -8px 25px rgba(0,0,0,0.2);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
 
-      padding: 12px 14px;
-      overflow-y: auto;
+  box-shadow: 0 -8px 25px rgba(0,0,0,0.2);
 
-      transform: translateY(100%);
-      transition: transform 0.25s ease;
-      font-family: Arial;
-    }
+  padding: 10px 12px;
+
+  overflow-y: auto;
+
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+
+  font-family: Arial;
+}
 
     #bottomDrawer.open {
       transform: translateY(0);
@@ -137,13 +141,30 @@
       flex: 1;
     }
 
-    @media (max-width: 768px) {
-      #infoPanel { display: none; }
-    }
+    @media (max-width: 500px), (max-height: 650px) {
+  #bottomDrawer {
+    max-height: min(60vh, 320px);
+  }
+}
 
-    @media (min-width: 769px) {
-      #bottomDrawer { display: none; }
-    }
+  .ui-name {
+    font-size: 18px !important;
+  }
+
+  .ui-contact a {
+    font-size: 13px !important;
+  }
+
+  .ui-img {
+    width: 100px !important;
+    height: 130px !important;
+  }
+
+  .contact-btn {
+    font-size: 18px !important;
+    padding: 8px 10px !important;
+  }
+}
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(6px); }
