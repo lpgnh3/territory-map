@@ -98,6 +98,14 @@
 
     #bottomDrawer.open { bottom: 0; }
 
+    #bottomDrawer {
+  transform: translateY(100%);
+}
+
+#bottomDrawer.open {
+  transform: translateY(0);
+}
+
     .drawer-handle {
       width: 40px;
       height: 5px;
@@ -158,6 +166,10 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
 
 map.on("click", closeUI);
 
+map.on("click", () => {
+  closeUI();
+});
+
 let activeRep = null;
 
 // ---------------- REPS ----------------
@@ -175,20 +187,22 @@ function render(repKey) {
   const r = reps[repKey];
 
   return `
-    <div class="drawer-card">
-      <img src="${r.photo}" class="drawer-img"/>
+    <div style="display:flex; gap:12px; align-items:center;">
 
-      <div class="drawer-text">
+      <div style="flex:1;">
         <div class="popup-name">${r.name}</div>
         <div class="popup-contact">
           ${r.email}<br>
           ${r.phone}
         </div>
       </div>
+
+      <img src="${r.photo}"
+           style="width:90px; height:110px; object-fit:cover; border-radius:10px;" />
+
     </div>
   `;
 }
-
 let activeTerritory = null;
 
 function closeUI() {
