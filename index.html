@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
-
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -25,6 +25,13 @@
     .leaflet-pane svg {
       transform: translateZ(0);
     }
+
+    @font-face {
+      font-family: 'AntonCustom';
+      src: url('./data/anton.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+}
 
     /* POPUP */
     .popup-card {
@@ -133,6 +140,133 @@
     @media (min-width: 769px) {
       #bottomDrawer { display: none; }
     }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================
+   CLEAN UI SYSTEM (FIXED)
+========================= */
+
+.ui-card {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+/* TEXT */
+.ui-name {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.ui-contact {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.ui-contact a {
+  display: block;
+  margin-top: 4px;
+  text-decoration: none;
+  color: #1c7ed6;
+  font-weight: 500;
+  font-size: 15px;
+}
+
+.ui-contact a:hover {
+  text-decoration: underline;
+}
+
+/* IMAGE BASE */
+.ui-img {
+  width: 140px;
+  height: 170px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+/* =========================
+   DESKTOP PANEL
+========================= */
+#infoPanel {
+  padding: 26px;
+}
+
+/* slightly larger desktop */
+#infoPanel .ui-img {
+  width: 160px;
+  height: 190px;
+}
+
+#infoPanel .ui-name {
+  font-size: 24px;
+}
+
+#infoPanel .ui-contact {
+  font-size: 17px;
+}
+
+/* =========================
+   MOBILE DRAWER (CENTERED)
+========================= */
+#bottomDrawer .ui-card {
+  align-items: center;
+  text-align: left;
+}
+
+#bottomDrawer .ui-img {
+  width: 120px;
+  height: 160px;
+  margin-top: 8px;
+}
+
+#bottomDrawer .ui-name {
+  font-size: 22px;
+  margin-top: 12px;
+}
+
+#bottomDrawer .ui-contact {
+  font-size: 16px;
+  margin-top: 6px;
+}
+
+.contact-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  margin-top: 8px;
+  padding: 10px 14px;
+
+  border-radius: 12px;
+
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border: 1px solid #dee2e6;
+
+  text-decoration: none;
+  color: #212529;
+
+  font-family: 'AntonCustom', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  font-style: italic;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+
+  transition: all 0.15s ease;
+}
+
+.contact-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+  background: linear-gradient(135deg, #ffffff, #f1f3f5);
+}
   </style>
 </head>
 
@@ -175,13 +309,19 @@ function render(repKey) {
   const r = reps[repKey];
 
   return `
-    <div style="display:flex; gap:12px; align-items:center;">
+    <div class="ui-card">
+
+      <img src="${r.photo}" class="ui-img"/>
+
       <div style="flex:1;">
-        <div class="popup-name">${r.name}</div>
-        <div class="popup-contact">${r.email}<br>${r.phone}</div>
+        <div class="ui-name">${r.name}</div>
+
+        <div class="ui-contact">
+  <a href="mailto:${r.email}" class="contact-btn">Email</a>
+  <a href="tel:${r.phone.replace(/[^0-9+]/g, '')}" class="contact-btn">Call</a>
+</div>
       </div>
-      <img src="${r.photo}"
-           style="width:90px; height:110px; object-fit:cover; border-radius:10px;" />
+
     </div>
   `;
 }
