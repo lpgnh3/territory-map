@@ -143,6 +143,10 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
   keepBuffer: 2
 }).addTo(map);
 
+map.on("click", closeUI);
+
+let activeRep = null;
+
 // ---------------- REPS ----------------
 const reps = {
   NE_IA_SOUTH_MN: { name:"Tristen Durant", email:"tldurant@lpgnh3.com", phone:"(763) 234-8661", photo:"./photos/Tristen.jpg" },
@@ -168,13 +172,35 @@ function render(repKey) {
 function openUI(repKey) {
   const isMobile = window.innerWidth <= 768;
 
-  if (isMobile) {
-    document.getElementById("drawerContent").innerHTML = render(repKey);
-    document.getElementById("bottomDrawer").classList.add("open");
-  } else {
-    document.getElementById("infoPanel").innerHTML = render(repKey);
-    document.getElementById("infoPanel").classList.add("open");
+  const panel = document.getElementById("infoPanel");
+  const drawer = document.getElementById("bottomDrawer");
+
+  const content = isMobile
+    ? document.getElementById("drawerContent")
+    : panel;
+
+  // 🔁 TOGGLE behavior (click same territory closes it)
+  if (activeRep === repKey) {
+    closeUI();
+    return;
   }
+
+  activeRep = repKey;
+
+  content.innerHTML = render(repKey);
+
+  if (isMobile) {
+    drawer.classList.add("open");
+  } else {
+    panel.classList.add("open");
+  }
+}
+
+function closeUI() {
+  activeRep = null;
+
+  document.getElementById("infoPanel").classList.remove("open");
+  document.getElementById("bottomDrawer").classList.remove("open");
 }
 
 // ---------------- DRAWER CONTROLS (FIXED) ----------------
@@ -239,7 +265,10 @@ function addLayer(feature, color, repKey) {
   L.geoJSON(feature, {
     style: style(color),
     onEachFeature: (f, l) => {
-      l.on("click", () => openUI(repKey));
+      l.on("click", (e) => {
+        L.DomEvent.stopPropagation(e);
+        openUI(repKey);
+});
     }
   }).addTo(map);
 }
