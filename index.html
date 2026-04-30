@@ -10,14 +10,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
-    html, body {
-  height: 100%;
-  margin: 0;
-}
-
-#map {
-  height: 100%;
-}
     #map { height: 100vh; width: 100%; }
 
     .leaflet-overlay-pane svg {
@@ -92,13 +84,13 @@
 
     /* MOBILE DRAWER */
     #bottomDrawer {
-  position: absolute;
+  position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
 
   height: auto;
-  max-height: 60%;
+  max-height: 45%;
 
   background: white;
   z-index: 1200;
@@ -155,7 +147,7 @@
 }
 
   .ui-name {
-    font-size: clamp(16px, 2.5vw, 22px);
+    font-size: 18px !important;
   }
 
   .ui-contact a {
@@ -163,13 +155,13 @@
   }
 
   .ui-img {
-    width: clamp(90px, 20%, 140px);
+    width: 100px !important;
     height: 130px !important;
   }
 
   .contact-btn {
-    font-size: clamp(14px, 2.5vw, 22px);
-    padding: clamp(6px, 1.5vw, 10px) clamp(8px, 2vw, 14px);
+    font-size: 20px !important;
+    padding: 8px 10px !important;
   }
 }
 
@@ -419,22 +411,6 @@ function style(color) {
     smoothFactor: 0
   };
 }
-
-function adjustDrawer() {
-  const mapEl = document.getElementById('map');
-  const drawer = document.getElementById('bottomDrawer');
-
-  const height = mapEl.offsetHeight;
-
-  if (height < 500) {
-    drawer.style.maxHeight = "70%";
-  } else {
-    drawer.style.maxHeight = "45%";
-  }
-}
-
-window.addEventListener("resize", adjustDrawer);
-window.addEventListener("load", adjustDrawer);
 
 // ---------------- SAFE UNION ----------------
 function safeUnion(a, b) {
